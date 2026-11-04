@@ -215,32 +215,21 @@ assert.doesNotMatch(inlineText, /^AI_MODEL=/m);
 process.env.ENV_FILE = envPath;
 
 // Gagal tulis .env: runtime tetap aktif, tapi tidak boleh ada file temp berisi key.
-const roEnv = path.resolve(dir, 'readonly.env');
-fs.writeFileSync(
-  roEnv,
-  [
-    'AI_BASE_URL=https://api.deepseek.com/v1',
-    'AI_API_KEY=sk-ro-9999',
-    'AI_MODEL=old',
-    'AI_THINKING=off',
-  ].join('\n'),
-);
+// Pakai parent yang berupa file supaya gagal di Windows maupun Linux (chmod 0444
+// tidak mencegah rename di Linux).
+const roParent = path.resolve(dir, 'readonly-parent');
+fs.writeFileSync(roParent, 'not a directory');
+const roEnv = path.join(roParent, 'readonly.env');
 process.env.ENV_FILE = roEnv;
-fs.chmodSync(roEnv, 0o444);
-let ro;
-try {
-  ro = settings.saveSettings({
-    baseUrl: 'https://api.deepseek.com/v1',
-    apiKey: 'sk-ro-new',
-    model: 'ro-model',
-    thinking: 'off',
-    temperature: 1,
-    maxTokens: 1000,
-    me: 'Test',
-  });
-} finally {
-  fs.chmodSync(roEnv, 0o666);
-}
+const ro = settings.saveSettings({
+  baseUrl: 'https://api.deepseek.com/v1',
+  apiKey: 'sk-ro-new',
+  model: 'ro-model',
+  thinking: 'off',
+  temperature: 1,
+  maxTokens: 1000,
+  me: 'Test',
+});
 assert.equal(ro.persisted, false);
 assert.equal(
   fs.readdirSync(dir).filter((f) => f.startsWith('readonly.env.tmp-')).length,
