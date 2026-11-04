@@ -29,6 +29,22 @@
 
 ---
 
+## Table of Contents
+
+- [Why WA Reply AI?](#why-wa-reply-ai)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Demo](#demo)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Data and privacy](#data-and-privacy)
+- [Security](#security)
+- [Documentation](#documentation)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Disclaimer](#disclaimer)
+
 ## Why WA Reply AI?
 
 Most auto-replies feel like robots. WA Reply AI tries to sound like **you**:
@@ -73,6 +89,13 @@ flowchart TD
 
 Read the full breakdown in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
 step-by-step reply flow in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
+
+## Demo
+
+![Draft queue](docs/assets/demo/drafts.jpg)
+
+> Demo preview with fake contacts and drafts. No real chats, names, or phone numbers.
+> The demo instance runs with WhatsApp disabled; connect your own number locally.
 
 ## Quick start
 
