@@ -71,7 +71,8 @@ flowchart TD
   SSE --> UI
 ```
 
-Read the full breakdown in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Read the full breakdown in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
+step-by-step reply flow in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 
 ## Quick start
 
@@ -92,6 +93,8 @@ Open <http://localhost:3000> and scan the QR code:
 
 The dashboard binds to `127.0.0.1` by default. To use it from a phone on the same
 Wi-Fi, set `BIND_HOST=0.0.0.0` and read [Security](#security) first.
+
+Detailed guide: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Configuration
 
@@ -138,9 +141,13 @@ Back up by stopping the bot and copying `data/`, `.env`, `profile.md`, and
 - Never expose the port to the internet without VPN, a PIN, or an authenticated reverse proxy.
 - Keep `.env`, `data/`, `profile.md`, and `import-inbox/` out of Git.
 - Report vulnerabilities privately via [SECURITY.md](SECURITY.md).
+- No cloud database, no analytics, no hidden telemetry. Read [docs/TRUST.md](docs/TRUST.md).
 
 ## Documentation
 
+- [Installation](docs/INSTALL.md)
+- [How it works](docs/HOW_IT_WORKS.md)
+- [Trust and transparency](docs/TRUST.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [FAQ](docs/FAQ.md)
