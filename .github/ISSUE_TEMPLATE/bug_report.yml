@@ -1,0 +1,65 @@
+name: Bug report
+description: Laporkan bug yang bisa direproduksi
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Jangan lampirkan API key, nomor asli, atau isi chat pribadi.
+        Untuk masalah keamanan, gunakan Security Advisories, bukan issue publik.
+  - type: input
+    id: version
+    attributes:
+      label: Versi / commit
+      placeholder: "0.1.0 atau commit hash"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - WhatsApp / QR
+        - Balasan AI
+        - Dashboard
+        - Status
+        - Import
+        - Database
+        - Lainnya
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Langkah reproduksi
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Yang diharapkan
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Yang terjadi
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS & Node.js
+      placeholder: "Windows 11, Node 24"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log (redaksi data pribadi)
+      render: shell

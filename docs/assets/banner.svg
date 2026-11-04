@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="WA Reply AI">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#061a17"/>
+      <stop offset="0.55" stop-color="#0b3b32"/>
+      <stop offset="1" stop-color="#125e4f"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="320" fill="url(#bg)"/>
+  <rect x="64" y="62" width="72" height="6" rx="3" fill="url(#line)"/>
+  <text x="64" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#ecfdf5">WA Reply AI</text>
+  <text x="64" y="198" font-family="Segoe UI, Arial, sans-serif" font-size="24" fill="#a7f3d0">Auto-reply WhatsApp yang meniru gaya ngetik kamu.</text>
+  <text x="64" y="252" font-family="Consolas, monospace" font-size="18" fill="#99f6e4">Self-hosted · SQLite · OpenAI-compatible · Node.js 22+</text>
+  <circle cx="1080" cy="92" r="46" fill="#0f766e" opacity="0.65"/>
+  <circle cx="1114" cy="220" r="76" fill="#14b8a6" opacity="0.24"/>
+  <circle cx="1012" cy="238" r="30" fill="#5eead4" opacity="0.35"/>
+</svg>

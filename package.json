@@ -14,6 +14,14 @@
     "sqlite",
     "self-hosted"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CheztaGenZ/WhatsApp-Auto-Reply.git"
+  },
+  "homepage": "https://github.com/CheztaGenZ/WhatsApp-Auto-Reply#readme",
+  "bugs": {
+    "url": "https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/issues"
+  },
   "engines": {
     "node": ">=22"
   },

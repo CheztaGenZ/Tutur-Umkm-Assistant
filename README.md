@@ -1,298 +1,172 @@
-# WA Reply AI
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="WA Reply AI banner" width="100%" />
+</p>
 
-Auto-reply WhatsApp yang meniru cara ngetik kamu — dengan pagar pengaman supaya AI tidak
-asal jawab orang penting dan tidak pernah menyentuh grup.
+<h1 align="center">WA Reply AI</h1>
 
-## Cara kerja
+<p align="center">
+  Auto-reply WhatsApp yang mempelajari gaya ngetik kamu, dengan mode auto/draft/abaikan,
+  dashboard lokal, SQLite, dan provider AI yang kompatibel OpenAI.
+</p>
 
-Bukan fine-tune model. Tiga lapis konteks disuntik ke prompt setiap kali membalas:
+<p align="center">
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml/badge.svg" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-22c55e.svg" /></a>
+  <a href="https://nodejs.org"><img alt="Node.js 22+" src="https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="Platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="Status" src="https://img.shields.io/badge/status-beta-f59e0b" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="WhatsApp unofficial" src="https://img.shields.io/badge/WhatsApp-unofficial-25D366?logo=whatsapp&logoColor=white" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/CheztaGenZ/WhatsApp-Auto-Reply?style=social" /></a>
+</p>
 
-1. **Persona** — hasil analisis pesan-pesanmu dari export chat: panjang balasan, kebiasaan
-   huruf kecil, tanda baca, emoji favorit, singkatan khas (`wkwk`, `bgt`, `otw`).
-2. **Relationship card** — ringkasan AI tentang siapa orang itu bagimu, topik yang sering
-   dibahas, dan hal yang harus dihindari.
-3. **Few-shot** — pasangan chat asli (pesan dia → balasanmu) sebagai contoh ritme.
+> **Status:** beta, self-hosted, satu pengguna. Bukan produk resmi WhatsApp. Risiko ban nomor tetap ada.
 
-## Siapa yang dibalas
+## Daftar Isi
 
-Default-nya **tidak membalas siapa pun**. Setiap kontak punya satu dari tiga mode:
+- [Kenapa proyek ini ada](#kenapa-proyek-ini-ada)
+- [Fitur](#fitur)
+- [Arsitektur singkat](#arsitektur-singkat)
+- [Quick start](#quick-start)
+- [Konfigurasi](#konfigurasi)
+- [Database](#database)
+- [Keamanan](#keamanan)
+- [Dokumentasi](#dokumentasi)
+- [Kontribusi](#kontribusi)
+- [Lisensi](#lisensi)
+- [Disclaimer](#disclaimer)
 
-| Mode | Perilaku |
-|---|---|
-| `auto` | AI membalas sendiri, tetap dibatasi rate limit + ambang keyakinan |
-| `draft` | AI menyiapkan balasan, kamu yang tekan kirim di dashboard |
-| `jangan` | AI diam total, tidak menyimpan apa pun ke AI |
+## Kenapa proyek ini ada
 
-Selain itu, **selalu diabaikan** tanpa pengecualian:
+Balas chat satu per satu itu melelahkan, tapi auto-reply generik terasa seperti robot.
+WA Reply AI mencoba menyelesaikan dua hal itu:
 
-- Grup, status/broadcast, channel
-- Nomor di `VIP_NUMBERS` (.env)
-- Saat jam tenang (`QUIET_HOURS`)
-- Saat sistem dijeda (tombol di dashboard)
-- Pesan lebih tua dari 3 menit (backlog saat baru konek)
+1. **Meniru gaya ngetik kamu** dari export chat: panjang balasan, huruf kecil, singkatan,
+   emoji, dan kosakata khas.
+2. **Tidak asal balas.** Setiap kontak punya mode `auto`, `draft`, atau `jangan`, plus
+   pagar anti-ban seperti kuota, jeda per kontak, jam tenang, dan ambang keyakinan AI.
 
-Catatan soal grup: **tidak pernah dibalas**, tapi pesanmu di grup tetap
-dibaca dan dipakai melatih gaya ngetik. Justru di grup biasanya gaya paling
-santai muncul, termasuk bahasa daerah.
+## Fitur
 
-Bahkan di mode `auto`, balasan **tidak dikirim** kalau:
+- **Mode per kontak:** `auto`, `draft`, `jangan`.
+- **Persona dari chat asli:** analisis gaya, contoh few-shot, relationship card, memori.
+- **Dashboard lokal:** draft, kontak, status, aktivitas, token AI, log live (SSE).
+- **Multi-provider AI:** Google Gemini, OpenRouter, DeepSeek, OpenAI-compatible, Ollama.
+- **Media:** gambar dan stiker dikirim ke model vision; pesan suara ditranskrip.
+- **Status WhatsApp:** jadwalkan, kirim, tarik/revoke, hormati privasi Status.
+- **Keamanan dasar:** CSRF guard, Host allowlist, CSP, LAN read-only, loopback-only writes.
+- **SQLite lokal:** tanpa Postgres/Supabase, tanpa biaya database.
+- **Import:** export WhatsApp `.txt` atau `.zip`.
 
-- AI menilai pesan tidak butuh jawaban (`ok`, `sip`, info sepihak) → `reply: null`
-- Confidence di bawah `AUTO_CONFIDENCE_MIN` → turun jadi draft
-- Topik sensitif (uang, konflik, keluarga, kesehatan) → confidence dipaksa rendah
-- Batas harian/jam/jeda per-kontak tercapai
+## Arsitektur singkat
 
-## Instalasi
+```text
+WhatsApp (Baileys)
+        │
+        ▼
+Message Handler ──► Policy (mode, kuota, jam tenang)
+        │                    │
+        │                    ▼
+        │              AI Provider (OpenAI-compatible)
+        │                    │
+        ▼                    ▼
+SQLite (data/app.db) ◄── Draft / Sent / Usage
+        │
+        ▼
+Express Dashboard + SSE ──► Browser (PC / LAN read-only)
+```
+
+Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+## Quick start
+
+Butuh **Node.js 22+**.
 
 ```bash
+git clone https://github.com/CheztaGenZ/WhatsApp-Auto-Reply.git
+cd WhatsApp-Auto-Reply
 npm ci
-cp .env.example .env     # Windows: copy .env.example .env
-# lalu isi AI_API_KEY dan MY_NAME
+cp .env.example .env      # Windows: copy .env.example .env
+# isi AI_API_KEY dan MY_NAME di .env
 npm start
 ```
 
-Buka <http://localhost:3000>, scan QR dengan WhatsApp di HP
-(**Perangkat tertaut → Tautkan perangkat**).
+Buka <http://localhost:3000>, lalu scan QR:
+**WhatsApp → Perangkat tertaut → Tautkan perangkat**.
 
-Butuh **Node.js 22+** (memakai `node:sqlite` bawaan, tanpa database eksternal).
+Default dashboard hanya terbuka di PC (`BIND_HOST=127.0.0.1`). Untuk membuka dari HP
+di Wi-Fi yang sama, ubah ke `BIND_HOST=0.0.0.0` dan baca [Keamanan](#keamanan).
 
-Default-nya dashboard hanya terbuka di PC (`BIND_HOST=127.0.0.1`). Kalau mau
-dibuka dari HP di Wi-Fi yang sama, ubah ke `BIND_HOST=0.0.0.0` dan baca bagian
-keamanan di bawah. **Jangan buka port ini ke internet tanpa VPN/PIN/reverse proxy
-ber-auth.**
+## Konfigurasi
 
-## Model & biaya
+Lihat tabel lengkap di [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
-Bot mendukung provider apa pun yang kompatibel OpenAI. Untuk Google Gemini:
+Contoh provider:
 
 ```env
+# Google Gemini
 AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-AI_API_KEY=...
 AI_MODEL=gemini-3.1-flash-lite
-# Kosongkan AI_VISION_MODEL kalau gambar/video mau ikut model teks.
 AI_VISION_MODEL=
 AI_THINKING=auto
+
+# OpenRouter
+# AI_BASE_URL=https://openrouter.ai/api/v1
+# AI_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+# AI_VISION_MODEL=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
 ```
 
-Untuk OpenRouter:
+`AI_VISION_MODEL` kosong berarti gambar/video memakai model teks yang sama.
+`AI_THINKING=off` disarankan untuk DeepSeek; `auto` untuk provider lain.
 
-```env
-AI_BASE_URL=https://openrouter.ai/api/v1
-AI_API_KEY=sk-or-...
-AI_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
-AI_VISION_MODEL=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
-AI_THINKING=auto
+## Database
+
+Database-nya **SQLite lokal** di `data/app.db`, dibuat otomatis saat pertama jalan.
+Tidak perlu Postgres, Supabase, atau server database eksternal.
+
+Yang perlu dibackup:
+
+```text
+data/app.db          + data/app.db-wal + data/app.db-shm
+data/auth/           sesi WhatsApp
+.env                 API key dan konfigurasi
+profile.md           profil persona
+stickers/            stiker
 ```
 
-`AI_VISION_MODEL` dipakai otomatis kalau pesan berisi gambar atau video. Kalau
-dikosongkan, bot memakai `AI_MODEL` untuk semua pesan.
+Cara aman: stop bot, copy seluruh folder `data/`, lalu copy `.env` dan `profile.md`.
+Jangan copy `app.db` sendirian saat server hidup karena ada WAL.
 
-`AI_THINKING=off` penting untuk DeepSeek. DeepSeek menyalakan *thinking mode* secara
-default — model menulis rantai penalaran panjang sebelum menjawab, jadi token output
-membengkak dan balasan jadi lambat. Untuk provider lain, gunakan `auto`.
+## Keamanan
 
-Sekali balas biasanya cuma ~1.500 token input (prompt + profil + contoh) dan ~30 token
-output. Harga tergantung provider dan model yang dipilih.
+- Default bind **127.0.0.1**; jangan buka ke internet tanpa VPN/PIN/reverse proxy ber-auth.
+- Semua aksi tulis hanya dari PC (loopback); LAN read-only.
+- `.env`, `data/`, `profile.md`, dan `import-inbox/` tidak boleh di-commit.
+- API key tidak pernah ditampilkan penuh di dashboard.
+- Laporkan masalah keamanan lewat [SECURITY.md](SECURITY.md), bukan issue publik.
 
-## Setting dari dashboard
+> **Peringatan:** WhatsApp Web tidak resmi. Gunakan nomor cadangan dan pahami risiko ban.
 
-Buka tab **Setting** untuk mengganti provider AI tanpa menyentuh terminal:
+## Dokumentasi
 
-- Pilih preset **DeepSeek / OpenAI / OpenRouter / Groq**, atau isi base URL sendiri.
-- Isi **API key**. Key yang sudah tersimpan hanya ditampilkan sebagian (`sk-…a1b2`);
-  biarkan kosong kalau tidak mau mengganti.
-- Isi **Model teks** dan **Model gambar/video**, lalu tekan **Tes koneksi** untuk mengecek key, latency, dan token.
-- Tekan **Simpan & aktifkan**. Perubahan langsung dipakai server yang sedang jalan, dan
-  `.env` ikut diperbarui supaya tetap sama setelah restart.
+- [Arsitektur](docs/ARCHITECTURE.md)
+- [Konfigurasi](docs/CONFIGURATION.md)
+- [FAQ](docs/FAQ.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Keamanan](SECURITY.md)
+- [Kontribusi](CONTRIBUTING.md)
 
-Kalau base URL pindah origin (skema + host + port, misalnya DeepSeek → OpenRouter atau
-https → http), API key lama **tidak** ikut dikirim ke origin baru. Key yang sedang diketik
-di form juga dikosongkan saat origin berubah. Isi key baru kalau provider itu membutuhkannya.
+## Kontribusi
 
-Dashboard bisa dibuka dari HP di Wi-Fi yang sama, tetapi tab Setting dari HP hanya mode
-lihat saja. Perubahan provider/API key sengaja dikunci ke PC.
+PR dan issue terbuka. Baca [CONTRIBUTING.md](CONTRIBUTING.md) dan
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dulu. Untuk bug keamanan, ikuti
+[SECURITY.md](SECURITY.md).
 
-Catatan: kalau server dijalankan dengan environment variable dari shell/PM2/Docker, nilai
-env itu yang menang atas `.env`. Dashboard menampilkan nilai yang benar-benar dipakai.
+## Lisensi
 
-## Keamanan akses
+[MIT](LICENSE) © 2026 Chesta Adabi Naufal.
 
-- Dashboard bisa dibaca dari HP di Wi-Fi yang sama, tetapi **semua aksi tulis** (kirim draft,
-  pause, logout, import, status, aktivitas, setting) hanya bisa dari PC. Request tulis dari
-  LAN mendapat `403`.
-- QR pairing hanya dikirim ke PC, tidak ke HP/LAN.
-- API hanya menerima koneksi dari loopback dan jaringan privat (RFC1918/link-local/ULA/
-  Tailscale). IP publik ditolak.
-- `BIND_HOST=0.0.0.0` membuat server hanya listen IPv4 dan bisa diakses HP. Set
-  `BIND_HOST=127.0.0.1` kalau dashboard hanya dipakai dari PC.
-- Kalau memakai hostname lokal (bukan IP/localhost), tambahkan ke `ALLOWED_HOSTS` di `.env`.
-- Dashboard memakai header keamanan (CSP, X-Frame-Options, nosniff, no-store) dan guard
-  CSRF/Origin. Ini bukan pengganti HTTPS/VPN: koneksi LAN tetap HTTP biasa.
-- Kalau Wi-Fi dipakai orang lain, gunakan VPN/Tailscale atau tambahkan PIN dashboard.
-  Pembatasan saat ini melindungi dari perubahan data, bukan dari pembacaan data privat
-  oleh perangkat yang sudah ada di jaringan privat.
+## Disclaimer
 
-## Sebelum push ke GitHub
-
-Repo ini sudah menyiapkan `.gitignore` untuk data pribadi:
-
-- `.env` — API key dan konfigurasi lokal
-- `data/` — database, sesi WhatsApp, gambar aktivitas/status
-- `profile.md` — profil pribadi
-- `import-inbox/` — file export chat
-- `stickers/*.webp|png|jpg` dan `stickers/catalog.json` — stiker dari chat pribadi
-- `.taste-skill/` dan `.superpowers/` — screenshot/backup/workspace lokal
-
-Jangan pernah `git add -f` file-file itu. Cek sekali lagi dengan `git status` sebelum commit.
-Kalau mau membuat repo baru:
-
-```bash
-git init
-git add .
-git status                 # pastikan tidak ada .env/data/profile/stiker pribadi
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/USERNAME/wa-reply-ai.git
-git push -u origin main
-```
-
-Lisensi: **MIT** (lihat `LICENSE`). CI ada di `.github/workflows/test.yml` dan
-menjalankan `npm test` tanpa connect ke WhatsApp.
-
-Ini alat **self-hosted untuk satu pengguna**, bukan SaaS multi-user. Jangan buka port-nya
-ke internet tanpa VPN/auth. WhatsApp Web tidak resmi, jadi risiko ban nomor tetap ada.
-
-## Token AI
-
-Setiap panggilan AI yang berhasil dicatat ke SQLite (`ai_usage`) memakai data `usage`
-asli dari provider. Total token dan token hari ini tampil di kartu kecil kiri bawah
-sidebar; klik kartu itu untuk membuka rincian di tab Setting.
-
-Rinciannya berisi input/output, jumlah panggilan, panggilan terakhir, dan pecahan per
-jenis pekerjaan (balas pesan, profil kontak, memori, stiker, tes koneksi). Provider yang
-tidak mengirim `usage` tetap bisa dipakai; tokennya tercatat 0 dan UI memberi catatan.
-
-## Profil kamu
-
-Edit **`profile.md`** untuk info yang boleh dipakai AI: nama, umur, asal, kampus, dsb.
-File ini dibaca ulang setiap kali membalas, jadi tidak perlu restart.
-
-Belum punya file? Salin template-nya:
-
-```bash
-cp profile.example.md profile.md   # Windows: copy profile.example.md profile.md
-```
-
-`profile.md` tidak ikut di-commit. Jangan taruh alamat lengkap, nomor rekening, atau data
-yang tidak ingin dibocorkan. AI diinstruksikan menjawab dengan sudut pandang orang pertama,
-tapi **tidak** menyebut nama lengkap, alamat, atau kampus ke orang yang belum jelas siapa.
-
-## Bahasa daerah
-
-Gaya bahasa ikut contoh chat, bukan disetel manual. Kalau pesanmu sehari-hari
-campur Jawa, balasannya ikut Jawa. Tingkat tutur dijaga:
-
-- Teman sebaya → ngoko / kasar, sesuai contoh
-- Orang tua & keluarga → krama/halus atau Indonesia sopan, walau contohnya campur
-
-Profil gaya dipilih otomatis dari yang sampelnya paling banyak: profil per-kontak,
-gaya umum dari grup, atau gaya global.
-
-## Melatih gaya ngetik
-
-1. Di WhatsApp: buka chat → ⋮ → **More** → **Export chat** → **Without media**.
-2. Dashboard → tab **Import** → upload `.txt`-nya.
-   Bisa **banyak file sekaligus**: satu file = satu kontak. Nama kamu dideteksi otomatis
-   dari nama yang muncul di hampir semua file.
-3. Pilih nama kamu di export, pilih kontak, simpan.
-4. Ulangi untuk kontak-kontak yang penting. Semakin banyak pesanmu, semakin mirip hasilnya.
-
-Kontak hasil import yang belum punya nomor akan otomatis terhubung saat dia mengirim
-pesan pertama (dicocokkan lewat nama).
-
-### Soal backup WhatsApp
-
-Backup Android (`msgstore.db.crypt14`) terenkripsi dengan key yang hanya bisa dibaca
-lewat root, jadi **tidak bisa diupload langsung**. Backup iPhone juga hanya kebaca
-kalau tidak dipassword.
-
-Kalau tidak mau export satu-satu, ada dua jalan tanpa root:
-
-- **Belajar sendiri** — setiap ~20 pesan baru, profil gaya diperbarui otomatis dari
-  pesan yang lewat di WhatsApp.
-- **Tombol ↻** di tab Kontak untuk memaksa perbarui saat itu juga.
-
-## Soal risiko ban
-
-Nomor bisa di-ban karena ini klien tidak resmi. Mitigasi yang sudah ditanam:
-
-- Hanya **membalas**, tidak pernah memulai percakapan
-- Rate limit harian/jam + jeda minimum per kontak
-- Delay acak 4–12 detik dengan indikator "typing"
-- Jam tenang supaya tidak seperti bot 24 jam
-- Tidak ada template identik ke banyak orang (selalu digenerate ulang)
-
-Tetap disarankan: **pakai nomor kedua**, jangan nomor utama. Kalau nomor itu penting,
-pakai WhatsApp Business Cloud API resmi (tapi tidak bisa baca history lama).
-
-## Struktur
-
-```
-src/
-  config.js            konfigurasi + pagar
-  settings.js          setting provider AI dari dashboard + penulis .env
-  db.js                skema SQLite + query
-  policy.js            SATU-SATUNYA tempat keputusan balas/tidak
-  server.js            API + SSE
-  ai/client.js         klien OpenAI-compatible
-  ai/usage.js          normalisasi + pencatat pemakaian token
-  ai/prompt.js         3 lapis prompt + kontrak JSON
-  ingest/parseExport.js parser export WA (iOS & Android)
-  ingest/style.js      analisis gaya ngetik
-  wa/client.js         koneksi Baileys + QR
-  wa/handler.js        alur pesan masuk
-public/                dashboard
-```
-
-`policy.js` sengaja dipisah: kalau mau mengubah aturan siapa yang boleh dibalas,
-itu satu-satunya file yang perlu disentuh.
-
-## Perintah
-
-```bash
-npm start                          # jalankan
-npm run dev                        # jalankan dengan auto-reload
-npm run test-ai                    # cek koneksi API + status key
-npm test                           # tes: parser, gaya, kebijakan, alur balas, status, setting/token, API, zip
-npm run simulate -- "mamah" "halo" # coba balasan tanpa mengirim
-npm run reset-import               # buang profil hasil import (impor ulang)
-```
-
-`npm test` tidak butuh WhatsApp login maupun API key — AI diganti server tiruan.
-
-## Cara mengetes
-
-**1. Tanpa kirim apa pun** — paling aman
-
-```bash
-npm run simulate -- "mamah" "chesta udah makan?"
-```
-
-Keluarannya: balasan yang akan dikirim, confidence, dan keputusan akhir
-(langsung kirim atau masuk draft).
-
-**2. Lewat dashboard**
-Set kontak ke `draft`, minta orang lain kirim pesan. Draft muncul di tab Draft —
-bisa diedit, dikirim, atau dibuang.
-
-**3. Auto-reply penuh**
-Set kontak ke `auto`, minta orang lain kirim pesan lagi. Balasan terkirim sendiri.
-Pantau tab **Log** untuk melihat alasannya kalau tidak terkirim.
-
-Yang sering bikin tes gagal:
-
-- **Server mati** → tidak ada yang membalas. Harus `npm start` / `start.bat`.
-- **Pesan lebih tua dari 3 menit** diabaikan, biar tidak balas chat semalam.
-- **Jam tenang** (default 01:00–07:00) memblokir auto-reply. Set `QUIET_HOURS=off` sementara.
-- **Jeda per kontak** — kalau baru saja membalas kontak itu, pesan berikutnya dalam
-  `MIN_GAP_PER_CONTACT_SEC` detik akan diabaikan.
+Proyek ini tidak berafiliasi dengan WhatsApp, Meta, Google, OpenRouter, atau DeepSeek.
+Penggunaan otomasi WhatsApp dapat melanggar ketentuan layanan dan berisiko banned.
+Gunakan dengan tanggung jawab sendiri.

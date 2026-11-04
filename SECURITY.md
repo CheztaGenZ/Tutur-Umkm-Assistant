@@ -7,7 +7,11 @@ Hanya versi terbaru di branch `main` yang menerima perbaikan keamanan.
 ## Cara melaporkan masalah
 
 Jangan buka issue publik untuk masalah keamanan. Gunakan **GitHub Security
-Advisories** di repository ini, atau hubungi pemilik repository secara privat.
+Advisories** di repository ini:
+
+<https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/security/advisories/new>
+
+Atau hubungi pemilik repository secara privat.
 
 Sertakan:
 
