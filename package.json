@@ -1,0 +1,59 @@
+{
+  "name": "wa-reply-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Auto-reply WhatsApp yang meniru gaya ngetik kamu, dengan allowlist kontak + dashboard lokal.",
+  "license": "MIT",
+  "author": "Chesta Adabi Naufal",
+  "keywords": [
+    "whatsapp",
+    "baileys",
+    "auto-reply",
+    "ai",
+    "sqlite",
+    "self-hosted"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node scripts/selftest.mjs && node scripts/handler.test.mjs && node scripts/status.test.mjs && node scripts/settings.test.mjs && node scripts/security.test.mjs && node scripts/smoke.mjs",
+    "test-ai": "node scripts/test-ai.mjs",
+    "test-vision": "node scripts/test-vision.mjs",
+    "test-transcribe": "node scripts/test-transcribe.mjs",
+    "simulate": "node scripts/simulate.mjs",
+    "reset-import": "node scripts/reset-import.mjs",
+    "import-file": "node scripts/import-cli.mjs",
+    "inspect": "node scripts/inspect-export.mjs",
+    "stats": "node scripts/stats.mjs",
+    "diag": "node scripts/diag.mjs",
+    "profile": "node scripts/profile.mjs",
+    "detect-register": "node scripts/detect-registers.mjs",
+    "examples": "node scripts/examples.mjs",
+    "set-alias": "node scripts/set-aliases.mjs",
+    "rebuild-all": "node scripts/rebuild-all.mjs",
+    "set-language": "node scripts/set-language.mjs",
+    "link": "node scripts/link.mjs",
+    "set-burst": "node scripts/set-burst.mjs",
+    "update-memory": "node scripts/update-memory.mjs",
+    "mark-family": "node scripts/mark-family.mjs",
+    "fix-names": "node scripts/fix-names.mjs",
+    "migrate-roles": "node scripts/migrate-roles.mjs",
+    "show-prompt": "node scripts/show-prompt.mjs",
+    "import-stickers": "node scripts/import-stickers.mjs",
+    "pick-sticker": "node scripts/pick-sticker.mjs"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@huggingface/transformers": "^4.3.2",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "adm-zip": "^0.6.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
+  }
+}

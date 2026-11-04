@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WA Reply AI</title>
+    <script src="/theme-init.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <path
+              d="M7 8.5h18a2.5 2.5 0 0 1 2.5 2.5v9a2.5 2.5 0 0 1-2.5 2.5H15l-5.2 4v-4H7A2.5 2.5 0 0 1 4.5 20v-9A2.5 2.5 0 0 1 7 8.5Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linejoin="round"
+            />
+            <circle cx="11" cy="15.5" r="1.2" fill="currentColor" />
+            <circle cx="16" cy="15.5" r="1.2" fill="currentColor" />
+            <circle cx="21" cy="15.5" r="1.2" fill="currentColor" />
+          </svg>
+          <div class="brand-text">
+            <strong>WA Reply</strong>
+            <span id="brandNumber">Chesta · menghubungkan…</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Navigasi utama">
+          <button class="tab active" data-tab="drafts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h10M4 17.5h13" /></svg>
+            <span>Draft</span>
+            <span class="badge" id="draftCount">0</span>
+          </button>
+          <button class="tab" data-tab="contacts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><path d="M15.5 6.2a3 3 0 0 1 0 5.6M17.5 14.4c1.6.6 2.6 2.2 3 4.6" /></svg>
+            <span>Kontak</span>
+          </button>
+          <button class="tab" data-tab="activities">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12h4l2.2-5.5 3.6 11L15.8 12h4.7" /></svg>
+            <span>Aktivitas</span>
+          </button>
+          <button class="tab" data-tab="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.2" /><path d="M8 3.5v3M16 3.5v3M4 10h16" /></svg>
+            <span>Status</span>
+          </button>
+          <button class="tab" data-tab="import">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 7.5 12 3.5l4 4M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" /></svg>
+            <span>Import</span>
+          </button>
+          <button class="tab" data-tab="test">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5M10.5 3.5v6L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 9.5v-6" /><path d="M8 14.5h8" /></svg>
+            <span>Tes</span>
+          </button>
+          <button class="tab" data-tab="log">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14M5 12h14M5 17.5h9" /></svg>
+            <span>Log</span>
+          </button>
+          <button class="tab" data-tab="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+            <span>Setting</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <button class="usage-card" id="usageCard" type="button" aria-label="Buka setting token AI" title="Buka setting token AI">
+            <span class="usage-label">Token AI</span>
+            <span class="usage-value"><span id="usageTotal">0</span> <span class="usage-unit">token</span></span>
+            <span class="usage-meta">
+              <span id="usageToday">0 hari ini</span>
+              <span id="usageCalls">0 panggilan</span>
+            </span>
+          </button>
+          <div class="conn-card">
+            <div class="conn-line">
+              <span class="dot" id="dot"></span>
+              <span class="conn-label" id="waStatus">menghubungkan…</span>
+            </div>
+            <div class="conn-meta">
+              <span id="aiStatus">AI…</span>
+              <span id="quota">0 / 200</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="frame">
+        <header class="topbar">
+          <div class="topbar-left">
+            <span class="scope">Ruang kerja</span>
+            <strong>Chesta</strong>
+          </div>
+          <div class="topbar-right">
+            <button class="btn ghost icon-btn" id="themeBtn" aria-label="Ganti tema terang atau gelap" title="Ganti tema">
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" /></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
+            </button>
+            <button class="btn ghost" id="pauseBtn">Jeda</button>
+            <button class="btn ghost" id="logoutBtn">Putuskan</button>
+          </div>
+        </header>
+
+        <main class="sheet">
+          <div class="page-head">
+            <div>
+              <h1 id="pageTitle">Draft menunggu</h1>
+              <p id="pageSub">Pesan yang butuh persetujuanmu sebelum terkirim.</p>
+            </div>
+            <div class="page-action">
+              <span class="freshness" id="freshness">Diperbarui baru saja</span>
+            </div>
+          </div>
+
+          <div class="notice hidden" id="readOnlyBanner">
+            Mode lihat saja. Aksi yang mengubah data hanya bisa dilakukan dari PC.
+          </div>
+
+          <!-- DRAFTS -->
+          <section class="view active" id="view-drafts">
+            <div class="kpi-strip" aria-label="Ringkasan hari ini">
+              <div class="kpi">
+                <span class="kpi-label">Draft menunggu</span>
+                <span class="kpi-value"><span id="kpiDrafts">0</span></span>
+              </div>
+              <div class="kpi">
+                <span class="kpi-label">Terkirim hari ini</span>
+                <span class="kpi-value"><span id="kpiSent">0</span> <span class="kpi-unit">pesan</span></span>
+              </div>
+              <div class="kpi">
+                <span class="kpi-label">Kontak auto</span>
+                <span class="kpi-value"><span id="kpiAuto">0</span> <span class="kpi-unit">kontak</span></span>
+              </div>
+              <div class="kpi">
+                <span class="kpi-label">Status terjadwal</span>
+                <span class="kpi-value"><span id="kpiStatus">0</span> <span class="kpi-unit">job</span></span>
+              </div>
+            </div>
+
+            <div class="panel-head">
+              <h2>Antrean balasan</h2>
+              <div class="panel-head-actions">
+                <span class="muted" id="draftSummary">Semua kontak di mode draft berhenti di sini.</span>
+                <button class="btn small ghost danger hidden" id="clearDraftsBtn" type="button" title="Hapus semua draft pending">
+                  Hapus semua
+                </button>
+              </div>
+            </div>
+            <div class="stack" id="drafts"></div>
+          </section>
+
+          <!-- CONTACTS -->
+          <section class="view" id="view-contacts">
+            <div class="toolbar">
+              <input class="input search" id="contactSearch" placeholder="Cari nama atau nomor…" />
+              <span class="muted" id="contactSummary"></span>
+            </div>
+            <div class="panel-head">
+              <h2>Kontak & tingkat kesopanan</h2>
+              <span class="muted">Auto membalas sendiri, draft minta izin, jangan berarti diam.</span>
+            </div>
+            <div class="stack list" id="contacts"></div>
+          </section>
+
+          <!-- ACTIVITIES -->
+          <section class="view" id="view-activities">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Aktivitas terkini</h2>
+                <span class="muted">AI memakai ini saat ditanya “lagi apa”.</span>
+              </div>
+              <textarea id="activityText" class="input" rows="3" placeholder="cth: lagi kuliah di UNS sampai jam 5 sore"></textarea>
+              <div class="grid2">
+                <div>
+                  <label class="label">Foto (opsional)</label>
+                  <input type="file" id="activityImage" accept="image/*" class="input" />
+                </div>
+                <div>
+                  <label class="label">Berlaku (jam)</label>
+                  <input type="number" id="activityHours" class="input" value="8" min="1" max="48" />
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn primary" id="saveActivityBtn">Simpan aktivitas</button>
+                <span class="hint" id="activityInfo"></span>
+              </div>
+            </div>
+            <div class="stack list" id="activityList"></div>
+          </section>
+
+          <!-- STATUS -->
+          <section class="view" id="view-status">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Jadwalkan status</h2>
+                <span class="muted">Terkirim otomatis saat WhatsApp tersambung.</span>
+              </div>
+              <div class="hint" id="statusPrivacyInfo">Privasi Status: memuat…</div>
+              <div class="grid2">
+                <div>
+                  <label class="label">Tanggal</label>
+                  <input type="date" id="statusDate" class="input" />
+                </div>
+                <div>
+                  <label class="label">Jam</label>
+                  <input type="time" id="statusTime" class="input" />
+                </div>
+              </div>
+              <label class="label">Gambar status</label>
+              <input type="file" id="statusImage" accept="image/*" class="input" />
+              <label class="label">Caption</label>
+              <textarea id="statusCaption" class="input" rows="3" placeholder="caption status…"></textarea>
+              <div class="row" id="emojiRow"></div>
+              <div class="row">
+                <button class="btn primary" id="saveStatusBtn">Jadwalkan</button>
+                <span class="hint" id="statusInfo"></span>
+              </div>
+            </div>
+            <div class="panel-head">
+              <h2>Jadwal &amp; riwayat status</h2>
+              <span class="muted">Hapus hanya menghapus catatan di dashboard. Tarik menghapus status dari WhatsApp.</span>
+            </div>
+            <div class="stack list" id="statusList"></div>
+          </section>
+
+          <!-- IMPORT -->
+          <section class="view" id="view-import">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Import chat</h2>
+                <span class="muted">Export WhatsApp → .zip atau .txt. Satu file satu kontak.</span>
+              </div>
+              <label class="label">File export — bisa banyak sekaligus</label>
+              <input type="file" id="fileInput" accept=".txt,.zip,text/plain,application/zip" class="input" multiple />
+              <label class="label">Atau tempel satu chat</label>
+              <textarea id="rawInput" class="input mono" rows="4" placeholder="12/03/24 14.22 - Budi: halo&#10;12/03/24 14.23 - Chesta: halo juga"></textarea>
+              <div class="row">
+                <button class="btn" id="addPasteBtn">Tambah tempelan</button>
+                <span class="hint" id="previewInfo"></span>
+              </div>
+            </div>
+
+            <div class="panel hidden" id="batchPanel">
+              <div class="grid2">
+                <div>
+                  <label class="label">Nama kamu di semua export</label>
+                  <select id="meSelect" class="input"></select>
+                </div>
+                <div>
+                  <label class="label">Ringkasan</label>
+                  <div class="hint" id="batchInfo"></div>
+                </div>
+              </div>
+              <div class="stack" id="batchRows"></div>
+              <div class="row">
+                <button class="btn primary" id="importAllBtn">Import semua</button>
+                <button class="btn ghost" id="expandSlangBtn">Perluas kamus</button>
+                <button class="btn ghost" id="clearBtn">Kosongkan</button>
+              </div>
+            </div>
+
+            <div class="panel hidden" id="resultPanel"></div>
+          </section>
+
+          <!-- TEST -->
+          <section class="view" id="view-test">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Tes balasan</h2>
+                <span class="muted">Pakai data asli, tidak dikirim ke WhatsApp.</span>
+              </div>
+              <label class="label">Kontak</label>
+              <select id="testContact" class="input"></select>
+              <label class="label">Pesan yang masuk</label>
+              <textarea id="testMessage" class="input" rows="3" placeholder="cth: we lagi opo?"></textarea>
+              <div class="row">
+                <button class="btn primary" id="testBtn">Coba balas</button>
+                <span class="hint" id="testInfo"></span>
+              </div>
+            </div>
+            <div id="testResult"></div>
+          </section>
+
+          <!-- LOG -->
+          <section class="view" id="view-log">
+            <div class="panel-head">
+              <h2>Log langsung</h2>
+              <span class="muted">Keputusan sistem: dikirim, diabaikan, atau gagal.</span>
+            </div>
+            <div class="log" id="log"></div>
+          </section>
+
+          <!-- SETTINGS -->
+          <section class="view" id="view-settings">
+            <div class="settings-layout">
+              <section class="card settings-card">
+                <div class="panel-head">
+                  <h2>Provider AI</h2>
+                  <span class="muted" id="settingsProviderHint">memuat…</span>
+                </div>
+
+                <div class="notice hidden" id="settingsLocked">
+                  Mode lihat saja. Buka dashboard dari PC untuk mengubah provider.
+                </div>
+
+                <div class="provider-presets" id="providerPresets" role="group" aria-label="Preset provider">
+                  <button type="button" class="preset" data-provider="deepseek">DeepSeek</button>
+                  <button type="button" class="preset" data-provider="openai">OpenAI</button>
+                  <button type="button" class="preset" data-provider="google">Google</button>
+                  <button type="button" class="preset" data-provider="openrouter">OpenRouter</button>
+                  <button type="button" class="preset" data-provider="groq">Groq</button>
+                  <button type="button" class="preset" data-provider="custom">Lainnya</button>
+                </div>
+
+                <div class="grid2">
+                  <div>
+                    <label class="label" for="setBaseUrl">Base URL</label>
+                    <input class="input" id="setBaseUrl" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.deepseek.com/v1" />
+                  </div>
+                  <div>
+                    <label class="label" for="setModel">Model teks</label>
+                    <input class="input" id="setModel" type="text" autocomplete="off" spellcheck="false" placeholder="deepseek-flash" />
+                  </div>
+                </div>
+
+                <label class="label" for="setVisionModel">Model gambar/video</label>
+                <input class="input" id="setVisionModel" type="text" autocomplete="off" spellcheck="false" placeholder="Kosongkan = ikut model teks" />
+                <p class="hint">Dipakai kalau pesan berisi gambar atau video. Boleh dikosongkan.</p>
+
+                <label class="label" for="setApiKey">API key</label>
+                <div class="input-action">
+                  <input
+                    class="input secret-input"
+                    id="setApiKey"
+                    type="text"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-1p-ignore
+                    data-bwignore
+                    data-protonpass-ignore
+                    data-tp-ignore
+                    data-form-type="other"
+                    aria-label="API key"
+                    placeholder="Tersimpan · sk-…a1b2"
+                  />
+                  <button class="btn small ghost" id="toggleKeyBtn" type="button">Lihat</button>
+                </div>
+                <p class="hint" id="apiKeyHint">Kosongkan kalau tidak mau mengganti key.</p>
+
+                <label class="label" for="setMe">Nama kamu</label>
+                <input class="input" id="setMe" type="text" autocomplete="off" data-form-type="other" placeholder="Chesta" />
+
+                <details class="advanced">
+                  <summary>Lanjutan</summary>
+                  <div class="grid2">
+                    <div>
+                      <label class="label" for="setThinking">Mode thinking</label>
+                      <select class="input" id="setThinking">
+                        <option value="off">Hemat (off)</option>
+                        <option value="on">Pintar (on)</option>
+                        <option value="auto">Ikuti provider (auto)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="label" for="setTemperature">Temperature</label>
+                      <input class="input" id="setTemperature" type="number" min="0" max="2" step="0.05" />
+                    </div>
+                  </div>
+                  <label class="label" for="setMaxTokens">Max token output</label>
+                  <input class="input" id="setMaxTokens" type="number" min="1" max="8000" step="1" />
+                </details>
+
+                <div class="row">
+                  <button class="btn primary" id="saveSettingsBtn" type="button">Simpan &amp; aktifkan</button>
+                  <button class="btn" id="testSettingsBtn" type="button">Tes koneksi</button>
+                  <span class="hint" id="settingsInfo"></span>
+                </div>
+
+                <div class="test-result hidden" id="settingsTestResult" role="status" aria-live="polite"></div>
+                <p class="hint settings-note">
+                  API key disimpan di <code>.env</code> di komputer ini dan tidak pernah dikirim balik ke browser.
+                </p>
+                <p class="hint settings-note">
+                  Kalau server dijalankan lewat shell/PM2/Docker dengan env var, nilai env itu yang menang setelah restart.
+                </p>
+              </section>
+
+              <aside class="card usage-panel" id="usagePanel">
+                <div class="panel-head">
+                  <h2>Token AI</h2>
+                  <button class="btn small ghost" id="refreshUsageBtn" type="button">Muat ulang</button>
+                </div>
+                <div class="usage-total"><span id="usageTotalBig">0</span><span class="usage-total-unit">token</span></div>
+                <div class="usage-sub" id="usageSub">0 hari ini · 0 panggilan</div>
+                <div class="token-bar" aria-hidden="true">
+                  <span class="token-bar-in" id="tokenBarIn"></span>
+                  <span class="token-bar-out" id="tokenBarOut"></span>
+                </div>
+                <div class="token-legend">
+                  <span>Input <b id="usagePrompt">0</b></span>
+                  <span>Output <b id="usageCompletion">0</b></span>
+                </div>
+                <div class="usage-last" id="usageLast">Belum ada panggilan</div>
+                <div class="usage-breakdown" id="usageBreakdown"></div>
+                <p class="hint" id="usageNote"></p>
+              </aside>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="qrOverlay">
+      <div class="qr-card">
+        <h3>Scan untuk menghubungkan WhatsApp</h3>
+        <p class="hint">
+          Buka WhatsApp di HP → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → scan kode ini.
+        </p>
+        <img id="qrImg" alt="QR WhatsApp" />
+        <button class="btn ghost" id="closeQr">Tutup</button>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

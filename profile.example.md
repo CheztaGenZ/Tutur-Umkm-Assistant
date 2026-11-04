@@ -1,0 +1,26 @@
+# Profil Kamu
+
+Isi file ini dengan info yang boleh dipakai AI saat membalas. Salin dulu:
+
+```bash
+cp profile.example.md profile.md
+```
+
+Di Windows:
+
+```bat
+copy profile.example.md profile.md
+```
+
+`profile.md` tidak ikut di-commit (ada di `.gitignore`), jadi data pribadi kamu aman.
+Semakin relevan isinya, semakin natural balasan AI. Jangan taruh alamat lengkap, nomor
+rekening, atau hal yang tidak ingin dibocorkan ke orang lain.
+
+- Nama panggilan: ...
+- Nama lengkap: ...
+- Umur: ...
+- Domisili: ...
+- Kampus / pekerjaan: ...
+- Hobi: ...
+- Aktivitas rutin: ...
+- Hal yang tidak mau dibahas: ...
