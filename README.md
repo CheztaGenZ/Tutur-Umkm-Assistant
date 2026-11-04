@@ -5,102 +5,97 @@
 <h1 align="center">WA Reply AI</h1>
 
 <p align="center">
-  Auto-reply WhatsApp yang mempelajari gaya ngetik kamu, dengan mode auto/draft/abaikan,
-  dashboard lokal, SQLite, dan provider AI yang kompatibel OpenAI.
+  A self-hosted WhatsApp auto-reply that learns how you type, decides when to reply,
+  and keeps you in control with auto, draft, and ignore modes.
 </p>
 
 <p align="center">
-  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml/badge.svg" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml"><img alt="CI" src="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-22c55e.svg" /></a>
   <a href="https://nodejs.org"><img alt="Node.js 22+" src="https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white" /></a>
   <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="Platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey" /></a>
   <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="Status" src="https://img.shields.io/badge/status-beta-f59e0b" /></a>
   <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply"><img alt="WhatsApp unofficial" src="https://img.shields.io/badge/WhatsApp-unofficial-25D366?logo=whatsapp&logoColor=white" /></a>
-  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/CheztaGenZ/WhatsApp-Auto-Reply?style=social" /></a>
 </p>
 
-> **Status:** beta, self-hosted, satu pengguna. Bukan produk resmi WhatsApp. Risiko ban nomor tetap ada.
+<p align="center">
+  <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/CheztaGenZ/WhatsApp-Auto-Reply?style=social" /></a>
+  <a href="https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/network/members"><img alt="GitHub forks" src="https://img.shields.io/github/forks/CheztaGenZ/WhatsApp-Auto-Reply?style=social" /></a>
+</p>
 
-## Daftar Isi
+> **Beta · self-hosted · single-user.** Not affiliated with WhatsApp or Meta.  
+> Automating WhatsApp may violate its Terms of Service and can get a number banned. Use a spare number.
 
-- [Kenapa proyek ini ada](#kenapa-proyek-ini-ada)
-- [Fitur](#fitur)
-- [Arsitektur singkat](#arsitektur-singkat)
-- [Quick start](#quick-start)
-- [Konfigurasi](#konfigurasi)
-- [Database](#database)
-- [Keamanan](#keamanan)
-- [Dokumentasi](#dokumentasi)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
-- [Disclaimer](#disclaimer)
+---
 
-## Kenapa proyek ini ada
+## Why WA Reply AI?
 
-Balas chat satu per satu itu melelahkan, tapi auto-reply generik terasa seperti robot.
-WA Reply AI mencoba menyelesaikan dua hal itu:
+Most auto-replies feel like robots. WA Reply AI tries to sound like **you**:
 
-1. **Meniru gaya ngetik kamu** dari export chat: panjang balasan, huruf kecil, singkatan,
-   emoji, dan kosakata khas.
-2. **Tidak asal balas.** Setiap kontak punya mode `auto`, `draft`, atau `jangan`, plus
-   pagar anti-ban seperti kuota, jeda per kontak, jam tenang, dan ambang keyakinan AI.
+- learns your message length, casing, punctuation, slang, and emoji habits from exported chats
+- writes short, human-sounding replies instead of corporate paragraphs
+- keeps sensitive chats in `draft` mode until you approve them
+- respects quiet hours, rate limits, and per-contact cooldowns
+- runs locally with SQLite, so your chats never go to a database provider
 
-## Fitur
+## Features
 
-- **Mode per kontak:** `auto`, `draft`, `jangan`.
-- **Persona dari chat asli:** analisis gaya, contoh few-shot, relationship card, memori.
-- **Dashboard lokal:** draft, kontak, status, aktivitas, token AI, log live (SSE).
-- **Multi-provider AI:** Google Gemini, OpenRouter, DeepSeek, OpenAI-compatible, Ollama.
-- **Media:** gambar dan stiker dikirim ke model vision; pesan suara ditranskrip.
-- **Status WhatsApp:** jadwalkan, kirim, tarik/revoke, hormati privasi Status.
-- **Keamanan dasar:** CSRF guard, Host allowlist, CSP, LAN read-only, loopback-only writes.
-- **SQLite lokal:** tanpa Postgres/Supabase, tanpa biaya database.
-- **Import:** export WhatsApp `.txt` atau `.zip`.
+| Feature | What it does |
+|---|---|
+| **Per-contact modes** | `auto`, `draft`, or `ignore` for every chat |
+| **Persona engine** | Style profile, relationship card, few-shot examples, memory |
+| **Multi-provider AI** | Google Gemini, OpenRouter, DeepSeek, OpenAI-compatible, Ollama |
+| **Vision** | Images and stickers are sent to a vision-capable model |
+| **Voice notes** | Local Whisper transcription (or an online transcription endpoint) |
+| **Status scheduling** | Schedule, post, revoke, and respect WhatsApp Status privacy |
+| **Local dashboard** | Drafts, contacts, status, activity, token usage, live logs |
+| **Safety rails** | Daily/hourly limits, quiet hours, per-contact gap, confidence threshold |
+| **SQLite storage** | Zero database setup. No Postgres or Supabase required |
+| **Import** | WhatsApp export as `.txt` or `.zip` |
 
-## Arsitektur singkat
+## How it works
 
-```text
-WhatsApp (Baileys)
-        │
-        ▼
-Message Handler ──► Policy (mode, kuota, jam tenang)
-        │                    │
-        │                    ▼
-        │              AI Provider (OpenAI-compatible)
-        │                    │
-        ▼                    ▼
-SQLite (data/app.db) ◄── Draft / Sent / Usage
-        │
-        ▼
-Express Dashboard + SSE ──► Browser (PC / LAN read-only)
+```mermaid
+flowchart TD
+  WA[WhatsApp / Baileys] --> H[Message handler]
+  H --> P[Policy: mode, quota, quiet hours]
+  P -->|auto or draft| AI[AI provider]
+  P -->|ignore| X[Skip]
+  AI --> H
+  H --> DB[(SQLite data/app.db)]
+  H --> WA
+  H --> SSE[Live events]
+  DB --> API[Express API]
+  API --> UI[Dashboard]
+  SSE --> UI
 ```
 
-Detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Read the full breakdown in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Quick start
 
-Butuh **Node.js 22+**.
+Requires **Node.js 22+**.
 
 ```bash
 git clone https://github.com/CheztaGenZ/WhatsApp-Auto-Reply.git
 cd WhatsApp-Auto-Reply
 npm ci
 cp .env.example .env      # Windows: copy .env.example .env
-# isi AI_API_KEY dan MY_NAME di .env
+# add AI_API_KEY and MY_NAME to .env
 npm start
 ```
 
-Buka <http://localhost:3000>, lalu scan QR:
-**WhatsApp → Perangkat tertaut → Tautkan perangkat**.
+Open <http://localhost:3000> and scan the QR code:
 
-Default dashboard hanya terbuka di PC (`BIND_HOST=127.0.0.1`). Untuk membuka dari HP
-di Wi-Fi yang sama, ubah ke `BIND_HOST=0.0.0.0` dan baca [Keamanan](#keamanan).
+**WhatsApp → Linked devices → Link a device**
 
-## Konfigurasi
+The dashboard binds to `127.0.0.1` by default. To use it from a phone on the same
+Wi-Fi, set `BIND_HOST=0.0.0.0` and read [Security](#security) first.
 
-Lihat tabel lengkap di [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+## Configuration
 
-Contoh provider:
+Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ```env
 # Google Gemini
@@ -115,58 +110,77 @@ AI_THINKING=auto
 # AI_VISION_MODEL=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
 ```
 
-`AI_VISION_MODEL` kosong berarti gambar/video memakai model teks yang sama.
-`AI_THINKING=off` disarankan untuk DeepSeek; `auto` untuk provider lain.
+Leave `AI_VISION_MODEL` empty to use the text model for images and video.
 
-## Database
+## Data and privacy
 
-Database-nya **SQLite lokal** di `data/app.db`, dibuat otomatis saat pertama jalan.
-Tidak perlu Postgres, Supabase, atau server database eksternal.
-
-Yang perlu dibackup:
+Everything stays on your machine:
 
 ```text
-data/app.db          + data/app.db-wal + data/app.db-shm
-data/auth/           sesi WhatsApp
-.env                 API key dan konfigurasi
-profile.md           profil persona
-stickers/            stiker
+data/app.db        SQLite database
+data/auth/         WhatsApp session
+data/status/       status images
+.env               API keys and config
+profile.md         persona profile
+stickers/          sticker collection
 ```
 
-Cara aman: stop bot, copy seluruh folder `data/`, lalu copy `.env` dan `profile.md`.
-Jangan copy `app.db` sendirian saat server hidup karena ada WAL.
+Back up by stopping the bot and copying `data/`, `.env`, `profile.md`, and
+`stickers/`. Do not copy `app.db` alone while the server is running; SQLite uses WAL.
 
-## Keamanan
+> Dashboard screenshots are intentionally not included in this public repo to avoid
+> exposing real chats, names, or phone numbers.
 
-- Default bind **127.0.0.1**; jangan buka ke internet tanpa VPN/PIN/reverse proxy ber-auth.
-- Semua aksi tulis hanya dari PC (loopback); LAN read-only.
-- `.env`, `data/`, `profile.md`, dan `import-inbox/` tidak boleh di-commit.
-- API key tidak pernah ditampilkan penuh di dashboard.
-- Laporkan masalah keamanan lewat [SECURITY.md](SECURITY.md), bukan issue publik.
+## Security
 
-> **Peringatan:** WhatsApp Web tidak resmi. Gunakan nomor cadangan dan pahami risiko ban.
+- Default bind: **127.0.0.1** (local PC only).
+- LAN access is read-only for most data and write routes stay loopback-only.
+- Never expose the port to the internet without VPN, a PIN, or an authenticated reverse proxy.
+- Keep `.env`, `data/`, `profile.md`, and `import-inbox/` out of Git.
+- Report vulnerabilities privately via [SECURITY.md](SECURITY.md).
 
-## Dokumentasi
+## Documentation
 
-- [Arsitektur](docs/ARCHITECTURE.md)
-- [Konfigurasi](docs/CONFIGURATION.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Configuration](docs/CONFIGURATION.md)
 - [FAQ](docs/FAQ.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Keamanan](SECURITY.md)
-- [Kontribusi](CONTRIBUTING.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
 
-## Kontribusi
+## Roadmap
 
-PR dan issue terbuka. Baca [CONTRIBUTING.md](CONTRIBUTING.md) dan
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dulu. Untuk bug keamanan, ikuti
+- PIN/token authentication for LAN
+- Authenticated reverse-proxy support
+- Partial-bubble draft recovery
+- Atomic cross-contact quota reservation
+- Media redelivery race fix
+- SSRF guard for provider testing
+- Rate limits for read APIs, AI, and imports
+- Video support
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for details.
+
+## Contributing
+
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md)
+and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. For security issues, follow
 [SECURITY.md](SECURITY.md).
 
-## Lisensi
+## License
 
 [MIT](LICENSE) © 2026 Chesta Adabi Naufal.
 
 ## Disclaimer
 
-Proyek ini tidak berafiliasi dengan WhatsApp, Meta, Google, OpenRouter, atau DeepSeek.
-Penggunaan otomasi WhatsApp dapat melanggar ketentuan layanan dan berisiko banned.
-Gunakan dengan tanggung jawab sendiri.
+This project is not affiliated with WhatsApp, Meta, Google, OpenRouter, or DeepSeek.
+WhatsApp automation may violate their Terms of Service and can result in a ban.
+Use at your own risk.
+
+---
+
+<p align="center">
+  <a href="https://star-history.com/#CheztaGenZ/WhatsApp-Auto-Reply&Date">
+    <img src="https://api.star-history.com/svg?repos=CheztaGenZ/WhatsApp-Auto-Reply&type=Date" alt="Star history" width="600" />
+  </a>
+</p>

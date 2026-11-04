@@ -1,29 +1,29 @@
 # Code of Conduct
 
-## Komitmen
+## Our commitment
 
-Kami ingin proyek ini menjadi tempat yang aman dan ramah untuk semua orang, tanpa
-memandang pengalaman, identitas, atau latar belakang.
+We want this project to be a safe and welcoming place for everyone, regardless of
+experience, identity, or background.
 
-## Perilaku yang diharapkan
+## Expected behavior
 
-- Bersikap sopan dan konstruktif.
-- Kritik ide, bukan orangnya.
-- Hormati privasi: jangan minta atau membagikan data chat, nomor, atau API key orang lain.
-- Terima perbedaan pendapat dengan lapang.
+- Be respectful and constructive.
+- Critique ideas, not people.
+- Respect privacy: never ask for or share chat data, phone numbers, or API keys.
+- Accept disagreement with an open mind.
 
-## Perilaku yang tidak ditoleransi
+## Unacceptable behavior
 
-- Pelecehan, ancaman, atau ujaran kebencian.
-- Membagikan data pribadi tanpa izin.
-- Spam, doxxing, atau sabotase.
-- Menyuruh orang lain mengekspos layanan tanpa pengamanan.
+- Harassment, threats, or hate speech.
+- Sharing private data without permission.
+- Spam, doxxing, or sabotage.
+- Encouraging others to expose the service without protection.
 
-## Pelaporan
+## Reporting
 
-Laporkan masalah perilaku secara privat ke pemilik repository melalui GitHub.
-Laporan akan ditangani secara rahasia.
+Report behavior issues privately to the repository owner on GitHub. Reports will be
+handled confidentially.
 
-## Atribusi
+## Attribution
 
-Dokumen ini terinspirasi Contributor Covenant, versi ringkas untuk proyek kecil.
+Inspired by Contributor Covenant, in a short form suitable for a small project.

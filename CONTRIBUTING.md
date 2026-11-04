@@ -1,6 +1,6 @@
 # Contributing
 
-Terima kasih sudah mau bantu. Proyek ini kecil, jadi aturannya sederhana.
+Thanks for helping. This is a small project, so the rules are simple.
 
 ## Setup
 
@@ -12,34 +12,34 @@ cp .env.example .env
 npm test
 ```
 
-Tidak perlu connect WhatsApp untuk menjalankan test. Test memakai DB sementara dan
-WhatsApp palsu.
+You do not need WhatsApp to run the test suite. Tests use a temporary database and a
+fake WhatsApp client.
 
-## Sebelum PR
+## Before opening a PR
 
-- Jalankan `npm test` dan pastikan semua lulus.
-- Jangan commit `.env`, `data/`, `profile.md`, `import-inbox/`, atau stiker pribadi.
-- Jangan menambah API key, nomor telepon asli, atau isi chat ke test/fixture.
-- Untuk perubahan UI, sertakan screenshot (tanpa data pribadi).
-- Untuk perubahan perilaku, jelaskan sebelum/sesudah.
+- Run `npm test` and make sure everything passes.
+- Never commit `.env`, `data/`, `profile.md`, `import-inbox/`, or private stickers.
+- Never add API keys, real phone numbers, or chat content to tests or fixtures.
+- For UI changes, include a screenshot with personal data removed.
+- For behavior changes, explain the before/after.
 
-## Gaya kode
+## Code style
 
 - Node.js ESM (`import`/`export`).
-- Tanpa framework frontend; dashboard memakai HTML/CSS/JS biasa.
-- Pertahankan pola yang sudah ada; jangan refactor besar tanpa issue.
-- Komentar secukupnya, bahasa Indonesia atau Inggris boleh.
+- No frontend framework; the dashboard uses plain HTML/CSS/JS.
+- Follow existing patterns; avoid large refactors without an issue.
+- Comments in English are preferred for new code.
 
-## Commit
+## Commit messages
 
-Gunakan pesan yang jelas:
+Use clear messages:
 
 ```text
-fix: jangan buang pesan kedua saat lock
-feat: tambah fallback model vision
-docs: perjelas setup LAN
+fix: keep the second message when a chat is locked
+feat: add vision model fallback
+docs: clarify LAN setup
 ```
 
-## Keamanan
+## Security
 
-Jangan buka issue publik untuk vulnerability. Ikuti [SECURITY.md](SECURITY.md).
+Do not open a public issue for a vulnerability. Follow [SECURITY.md](SECURITY.md).

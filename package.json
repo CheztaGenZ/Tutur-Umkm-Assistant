@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Auto-reply WhatsApp yang meniru gaya ngetik kamu, dengan allowlist kontak + dashboard lokal.",
+  "description": "Self-hosted WhatsApp auto-reply that learns your typing style, with a local dashboard, SQLite, and OpenAI-compatible AI providers.",
   "license": "MIT",
   "author": "Chesta Adabi Naufal",
   "keywords": [

@@ -1,32 +1,32 @@
 name: Feature request
-description: Usulkan fitur atau perbaikan
+description: Suggest a feature or improvement
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Masalah yang mau diselesaikan
-      placeholder: "Saat ..., saya harus ..."
+      label: Problem to solve
+      placeholder: "When ..., I have to ..."
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
-      label: Usulan solusi
+      label: Proposed solution
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatif yang sudah dicoba
+      label: Alternatives considered
   - type: dropdown
     id: scope
     attributes:
       label: Scope
       options:
-        - Kecil (1 file)
-        - Sedang (beberapa file)
-        - Besar (fitur baru)
+        - Small (one file)
+        - Medium (a few files)
+        - Large (new feature)
     validations:
       required: true

@@ -1,27 +1,27 @@
-## Ringkasan
+## Summary
 
-Jelaskan perubahan dan alasannya.
+Describe the change and why it is needed.
 
-## Jenis perubahan
+## Type of change
 
 - [ ] Bug fix
-- [ ] Fitur
-- [ ] Dokumentasi
+- [ ] Feature
+- [ ] Documentation
 - [ ] Refactor
-- [ ] Keamanan
+- [ ] Security
 
 ## Checklist
 
-- [ ] `npm test` lulus
-- [ ] Tidak ada `.env`, `data/`, `profile.md`, atau data pribadi
-- [ ] Tidak ada API key/nomor asli di test/fixture
-- [ ] Sudah update dokumentasi bila perlu
-- [ ] Sudah jelaskan risiko/breaking change
+- [ ] `npm test` passes
+- [ ] No `.env`, `data/`, `profile.md`, or private data
+- [ ] No API keys or real phone numbers in tests/fixtures
+- [ ] Documentation updated when needed
+- [ ] Risks/breaking changes explained
 
-## Cara test
+## How to test
 
-Tulis langkah yang sudah dicoba.
+List the steps you tried.
 
-## Screenshot (UI)
+## Screenshots (UI)
 
-Tanpa data pribadi.
+Do not include private data.

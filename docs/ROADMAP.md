@@ -1,34 +1,34 @@
 # Roadmap
 
-## Sudah ada
+## Shipped
 
-- [x] Mode kontak: auto, draft, jangan
-- [x] Persona dari export chat
-- [x] Dashboard lokal + SSE
+- [x] Per-contact modes: auto, draft, ignore
+- [x] Persona from exported chats
+- [x] Local dashboard with live events
 - [x] Multi-provider AI (OpenAI-compatible)
-- [x] Gambar/stiker vision
-- [x] Transkrip suara
-- [x] Status scheduling + revoke
-- [x] Privasi Status fail-closed
-- [x] SQLite lokal
-- [x] Import `.txt` / `.zip`
-- [x] Handler lock queue + AI retry cap
-- [x] Kontak LID → PN repair
+- [x] Image and sticker vision
+- [x] Voice transcription
+- [x] Status scheduling and revoke
+- [x] Status privacy fail-closed
+- [x] Local SQLite storage
+- [x] `.txt` / `.zip` import
+- [x] Handler lock queue and AI retry cap
+- [x] LID → PN contact repair
 
-## Berikutnya
+## Next
 
-- [ ] PIN/token dashboard untuk LAN
-- [ ] Dukungan reverse proxy ber-auth
-- [ ] Draft hanya sisa bubble yang gagal
-- [ ] Reservasi kuota atomik lintas kontak
-- [ ] Race redelivery media
-- [ ] SSRF guard untuk `/api/settings/test`
-- [ ] Rate limit read API/AI/import
-- [ ] Dukungan video
+- [ ] PIN/token authentication for LAN
+- [ ] Authenticated reverse-proxy support
+- [ ] Draft only the remaining bubbles after a partial send
+- [ ] Atomic cross-contact quota reservation
+- [ ] Media redelivery race fix
+- [ ] SSRF guard for `/api/settings/test`
+- [ ] Rate limits for read APIs, AI, and imports
+- [ ] Video support
 - [ ] Coverage report
-- [ ] Migrasi schema formal
+- [ ] Formal schema migrations
 
-## Mungkin nanti
+## Later
 
 - [ ] Multi-user / SaaS
 - [ ] Postgres/Supabase adapter

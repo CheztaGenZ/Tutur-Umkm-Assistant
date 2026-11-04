@@ -1,36 +1,35 @@
 # Security Policy
 
-## Versi yang didukung
+## Supported versions
 
-Hanya versi terbaru di branch `main` yang menerima perbaikan keamanan.
+Only the latest version on `main` receives security fixes.
 
-## Cara melaporkan masalah
+## Reporting a vulnerability
 
-Jangan buka issue publik untuk masalah keamanan. Gunakan **GitHub Security
-Advisories** di repository ini:
+Do not open a public issue for a security problem. Use **GitHub Security Advisories**:
 
 <https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/security/advisories/new>
 
-Atau hubungi pemilik repository secara privat.
+Or contact the repository owner privately.
 
-Sertakan:
+Please include:
 
-- langkah reproduksi
-- dampak yang mungkin
-- versi Node.js dan OS
-- apakah masalah terjadi dari localhost, LAN, atau lewat reverse proxy
+- reproduction steps
+- potential impact
+- Node.js and OS version
+- whether the issue occurs from localhost, LAN, or through a reverse proxy
 
-## Batas keamanan
+## Security boundaries
 
-- Default `BIND_HOST=127.0.0.1`; dashboard hanya untuk PC yang menjalankan bot.
-- Jika diubah ke `0.0.0.0`, siapa pun di jaringan yang sama bisa membaca data
-  yang diizinkan endpoint LAN. Gunakan VPN/PIN/reverse proxy ber-auth.
-- Jangan mengekspos port ke internet tanpa perlindungan tambahan.
-- `.env`, `data/`, `profile.md`, dan `import-inbox/` berisi data sensitif dan
-  tidak boleh di-commit.
-- WhatsApp Web tidak resmi. Risiko ban nomor dan perubahan API tetap ada.
+- Default `BIND_HOST=127.0.0.1`; the dashboard is intended for the PC running the bot.
+- If you change it to `0.0.0.0`, anyone on the same network can read the data exposed
+  by LAN endpoints. Use a VPN, PIN, or authenticated reverse proxy.
+- Never expose the port to the internet without additional protection.
+- `.env`, `data/`, `profile.md`, and `import-inbox/` contain sensitive data and must
+  never be committed.
+- WhatsApp Web automation is unofficial. Ban risk and API changes remain.
 
-## Secret
+## Secrets
 
-API key, sesi WhatsApp, dan database tidak boleh dilampirkan ke issue publik.
-Redaksi nomor telepon dan isi chat sebelum melaporkan bug.
+Never attach API keys, WhatsApp sessions, or databases to public issues. Redact phone
+numbers and chat content before reporting a bug.

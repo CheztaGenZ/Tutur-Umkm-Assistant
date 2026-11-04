@@ -1,66 +1,66 @@
-# Konfigurasi
+# Configuration
 
-Semua konfigurasi dibaca dari `.env`. Mulai dari `.env.example`.
+All settings are read from `.env`. Start from `.env.example`.
 
 ## AI
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `AI_BASE_URL` | DeepSeek | Base URL OpenAI-compatible |
-| `AI_API_KEY` | kosong | API key provider |
-| `AI_MODEL` | `deepseek-flash` | Model teks |
-| `AI_VISION_MODEL` | kosong | Model gambar/video; kosong = ikut model teks |
-| `AI_THINKING` | `off` | `off`, `on`, `auto` (auto untuk provider non-DeepSeek) |
+| `AI_BASE_URL` | DeepSeek | OpenAI-compatible base URL |
+| `AI_API_KEY` | empty | Provider API key |
+| `AI_MODEL` | `deepseek-flash` | Text model |
+| `AI_VISION_MODEL` | empty | Image/video model; empty = use text model |
+| `AI_THINKING` | `off` | `off`, `on`, `auto` (use `auto` for non-DeepSeek providers) |
 | `AI_TEMPERATURE` | `1.0` | 0–2 |
-| `AI_MAX_TOKENS` | `2000` | Batas output |
-| `AI_TIMEOUT_MS` | `20000` | Timeout per percobaan |
-| `AI_REASONING_EFFORT` | `low` | Untuk DeepSeek saat thinking on |
+| `AI_MAX_TOKENS` | `2000` | Output limit |
+| `AI_TIMEOUT_MS` | `20000` | Per-attempt timeout |
+| `AI_REASONING_EFFORT` | `low` | DeepSeek reasoning effort when thinking is on |
 
-## Identitas & dashboard
+## Identity and dashboard
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `MY_NAME` | `Aku` | Nama kamu di chat |
-| `PORT` | `3000` | Port dashboard |
-| `BIND_HOST` | `127.0.0.1` | `0.0.0.0` untuk LAN |
-| `ALLOWED_HOSTS` | kosong | Hostname tambahan, pisahkan koma |
-| `WA_DISABLED` | kosong | `1` untuk tes tanpa WhatsApp |
+| `MY_NAME` | `Aku` | Your name in chats |
+| `PORT` | `3000` | Dashboard port |
+| `BIND_HOST` | `127.0.0.1` | Use `0.0.0.0` for LAN access |
+| `ALLOWED_HOSTS` | empty | Extra hostnames, comma-separated |
+| `WA_DISABLED` | empty | Set to `1` for tests without WhatsApp |
 
-## Pagar anti-ban
+## Anti-ban guardrails
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `MAX_MSGS_PER_DAY` | `40` | Kuota global per hari |
-| `MAX_MSGS_PER_HOUR` | `20` | Kuota global per jam |
-| `MIN_GAP_PER_CONTACT_SEC` | `10` | Jeda per kontak |
-| `QUIET_HOURS` | `01:00-07:00` | Jam tenang, `off` untuk mati |
-| `AUTO_CONFIDENCE_MIN` | `0.55` | Di bawah ini jadi draft |
-| `VIP_NUMBERS` | kosong | Nomor yang tidak pernah dibalas |
+| `MAX_MSGS_PER_DAY` | `40` | Global daily limit |
+| `MAX_MSGS_PER_HOUR` | `20` | Global hourly limit |
+| `MIN_GAP_PER_CONTACT_SEC` | `10` | Per-contact cooldown |
+| `QUIET_HOURS` | `01:00-07:00` | Quiet hours, `off` to disable |
+| `AUTO_CONFIDENCE_MIN` | `0.55` | Below this, reply becomes a draft |
+| `VIP_NUMBERS` | empty | Numbers that are never answered |
 
-## Chat & gaya
+## Chat and style
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `DEBOUNCE_MS` | `3500` | Gabung bubble yang berdekatan |
-| `DEBOUNCE_MAX_WAIT_MS` | `15000` | Batas tunggu debounce |
-| `FEWSHOT_COUNT` | `12` | Contoh chat di prompt |
-| `HISTORY_TURNS` | `10` | Riwayat yang dikirim ke AI |
+| `DEBOUNCE_MS` | `3500` | Merge consecutive bubbles |
+| `DEBOUNCE_MAX_WAIT_MS` | `15000` | Maximum debounce wait |
+| `FEWSHOT_COUNT` | `12` | Example chats included in the prompt |
+| `HISTORY_TURNS` | `10` | Conversation history sent to the AI |
 
-## Stiker
+## Stickers
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `STICKER_ENABLED` | `true` | Aktifkan stiker |
-| `STICKER_CHANCE` | `0.5` | Peluang kirim |
-| `STICKER_COOLDOWN_MIN` | `30` | Jeda per kontak |
-| `STICKER_EVERY` | `5` | Minimal pesan sejak stiker terakhir |
+| `STICKER_ENABLED` | `true` | Enable stickers |
+| `STICKER_CHANCE` | `0.5` | Send probability |
+| `STICKER_COOLDOWN_MIN` | `30` | Per-contact cooldown |
+| `STICKER_EVERY` | `5` | Minimum messages since the last sticker |
 
-## Transkrip suara
+## Voice transcription
 
-| Variabel | Default | Keterangan |
+| Variable | Default | Description |
 |---|---|---|
-| `AI_TRANSCRIBE_LOCAL` | `true` | Whisper lokal |
-| `AI_TRANSCRIBE_MODEL_LOCAL` | `Xenova/whisper-base` | Model lokal |
-| `AI_TRANSCRIBE_URL` | kosong | Endpoint transkrip online |
-| `AI_TRANSCRIBE_KEY` | kosong | Key transkrip online |
-| `AI_TRANSCRIBE_MODEL` | `whisper-1` | Model transkrip online |
+| `AI_TRANSCRIBE_LOCAL` | `true` | Use local Whisper |
+| `AI_TRANSCRIBE_MODEL_LOCAL` | `Xenova/whisper-base` | Local model |
+| `AI_TRANSCRIBE_URL` | empty | Online transcription endpoint |
+| `AI_TRANSCRIBE_KEY` | empty | Online transcription key |
+| `AI_TRANSCRIBE_MODEL` | `whisper-1` | Online transcription model |

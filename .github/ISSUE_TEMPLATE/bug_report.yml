@@ -1,18 +1,18 @@
 name: Bug report
-description: Laporkan bug yang bisa direproduksi
+description: Report a reproducible bug
 title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Jangan lampirkan API key, nomor asli, atau isi chat pribadi.
-        Untuk masalah keamanan, gunakan Security Advisories, bukan issue publik.
+        Do not attach API keys, real phone numbers, or private chat content.
+        For security issues, use Security Advisories instead of a public issue.
   - type: input
     id: version
     attributes:
-      label: Versi / commit
-      placeholder: "0.1.0 atau commit hash"
+      label: Version / commit
+      placeholder: "0.1.0 or commit hash"
     validations:
       required: true
   - type: dropdown
@@ -21,18 +21,18 @@ body:
       label: Area
       options:
         - WhatsApp / QR
-        - Balasan AI
+        - AI replies
         - Dashboard
         - Status
         - Import
         - Database
-        - Lainnya
+        - Other
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Langkah reproduksi
+      label: Steps to reproduce
       placeholder: |
         1. ...
         2. ...
@@ -42,24 +42,24 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Yang diharapkan
+      label: Expected behavior
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
-      label: Yang terjadi
+      label: Actual behavior
     validations:
       required: true
   - type: input
     id: environment
     attributes:
-      label: OS & Node.js
+      label: OS and Node.js
       placeholder: "Windows 11, Node 24"
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Log (redaksi data pribadi)
+      label: Logs (redact private data)
       render: shell

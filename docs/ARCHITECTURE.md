@@ -1,65 +1,66 @@
-# Arsitektur
+# Architecture
 
-## Alur utama
+## Main flow
 
 ```mermaid
 flowchart TD
-  WA[WhatsApp / Baileys] --> H[Message Handler]
-  H --> P[Policy: mode, kuota, jam tenang]
-  P -->|auto/draft| AI[AI Provider]
+  WA[WhatsApp / Baileys] --> H[Message handler]
+  H --> P[Policy: mode, quota, quiet hours]
+  P -->|auto or draft| AI[AI provider]
   P -->|ignore| X[Skip]
   AI --> H
   H --> DB[(SQLite data/app.db)]
   H --> WA
-  H --> SSE[SSE Events]
+  H --> SSE[Live events]
   DB --> API[Express API]
   API --> UI[Dashboard]
   SSE --> UI
 ```
 
-## Komponen
+## Components
 
-| Komponen | File | Tugas |
+| Component | File | Responsibility |
 |---|---|---|
-| WhatsApp client | `src/wa/client.js` | Socket Baileys, QR, kirim teks/media/status, privacy sync |
-| Handler | `src/wa/handler.js` | Terima pesan, panggil AI, pilih auto/draft/ignore |
-| Policy | `src/policy.js` | Kuota, jeda, jam tenang, VIP, mode kontak |
-| AI client | `src/ai/client.js` | OpenAI-compatible request, fallback, usage |
-| Prompt | `src/ai/prompt.js` | Persona, relationship, few-shot, aturan output |
-| Database | `src/db.js` | SQLite schema + helper |
+| WhatsApp client | `src/wa/client.js` | Baileys socket, QR, text/media/status sending, privacy sync |
+| Handler | `src/wa/handler.js` | Receive messages, call AI, choose auto/draft/ignore |
+| Policy | `src/policy.js` | Quotas, cooldowns, quiet hours, VIP, contact mode |
+| AI client | `src/ai/client.js` | OpenAI-compatible requests, fallbacks, usage |
+| Prompt | `src/ai/prompt.js` | Persona, relationship card, few-shot, output rules |
+| Database | `src/db.js` | SQLite schema and helpers |
 | Server | `src/server.js` | Express API, static dashboard, SSE, security middleware |
-| Dashboard | `public/` | UI tanpa framework, CSP strict |
-| Status worker | `src/wa/statusWorker.js` | Kirim status terjadwal, klaim atomik, kuota |
-| Import | `src/ingest/` | Parse export, gaya, seed, auto-import ZIP |
+| Dashboard | `public/` | Framework-free UI with strict CSP |
+| Status worker | `src/wa/statusWorker.js` | Scheduled statuses, atomic claims, quota |
+| Import | `src/ingest/` | Export parsing, style analysis, seeding, ZIP auto-import |
 
 ## Data
 
 ```text
 data/
-  app.db        SQLite utama (WAL)
-  auth/         sesi WhatsApp multi-file
-  status/       gambar status
+  app.db        main SQLite database (WAL)
+  auth/         multi-file WhatsApp session
+  status/       status images
 ```
 
-Tabel utama: `contacts`, `messages`, `drafts`, `examples`, `wa_contacts`,
+Main tables: `contacts`, `messages`, `drafts`, `examples`, `wa_contacts`,
 `group_samples`, `activities`, `status_jobs`, `status_send_log`, `ai_usage`, `kv`.
 
-## Batas kepercayaan
+## Trust boundaries
 
-- Dashboard PC: bisa baca dan tulis.
-- Dashboard LAN: read-only, dengan redaksi data sensitif.
-- WhatsApp: sumber pesan tidak tepercaya; konten masuk ke prompt dan dashboard.
-- AI provider: menerima potongan percakapan; jangan kirim data yang tidak boleh keluar.
-- `.env` dan `data/` adalah data sensitif; jangan pernah di-commit.
+- PC dashboard: read and write.
+- LAN dashboard: read-only for most data, with sensitive fields redacted.
+- WhatsApp: untrusted input; message content reaches prompts and the dashboard.
+- AI provider: receives conversation snippets; do not send data that must not leave your machine.
+- `.env` and `data/` are sensitive and must never be committed.
 
-## Kenapa SQLite
+## Why SQLite
 
-Proyek ini single-user dan berjalan di satu mesin. SQLite memberi:
+This is a single-user, single-machine app. SQLite gives:
 
-- nol setup dan nol biaya
-- data lokal, tidak keluar ke cloud
-- query cukup cepat untuk ribuan pesan
-- backup dengan copy folder
+- zero setup and zero database cost
+- local data, no cloud database provider
+- fast queries for thousands of messages
+- backup by copying a folder
 
-Postgres/Supabase baru relevan kalau proyek menjadi multi-user/SaaS atau berjalan di
-banyak instance. Bot WhatsApp tetap butuh proses long-lived, jadi bukan sekadar database.
+Postgres or Supabase only makes sense if the project becomes multi-user/SaaS or runs
+across multiple instances. A WhatsApp bot still needs a long-lived process, so the
+database is only one part of that architecture.

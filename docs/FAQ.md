@@ -1,66 +1,68 @@
 # FAQ
 
-## Apakah butuh Postgres atau Supabase?
+## Do I need Postgres or Supabase?
 
-Tidak. Database-nya SQLite lokal di `data/app.db`. Tidak ada server database eksternal.
-Postgres/Supabase baru relevan kalau proyek jadi multi-user atau SaaS.
+No. The database is local SQLite at `data/app.db`. No external database server is
+required. Postgres/Supabase only makes sense if the project becomes multi-user or SaaS.
 
-## Kenapa kontak tampil sebagai “Orang”?
+## Why does a contact show up as “Orang” (Person)?
 
-WhatsApp memakai LID (`@lid`) untuk chat dan PN (`@s.whatsapp.net`) untuk nomor telepon.
-Kalau nama buku kontak tidak ketemu, bot memakai “Orang”. Versi terbaru sudah memetakan
-LID → PN dan memperbaiki kontak lama saat WhatsApp ready. Beberapa kontak bisa tetap
-“Orang” kalau namanya tidak ada di `wa_contacts`; rename manual dari dashboard.
+WhatsApp uses LID (`@lid`) for chats and PN (`@s.whatsapp.net`) for phone numbers. If
+the address-book name cannot be resolved, the bot falls back to “Orang”. The latest
+version maps LID to PN and repairs old contacts when WhatsApp becomes ready. A few
+contacts may remain “Orang” if their name is missing from `wa_contacts`; rename them
+from the dashboard.
 
-## Kenapa API key ditawari simpan password oleh Chrome/Google?
+## Why does Chrome/Google offer to save the API key as a password?
 
-Dulu field-nya `type=password`. Sekarang `type=text` + CSS mask + `autocomplete=off` +
-atribut anti-password-manager. Kalau Chrome masih menawarkan, hapus entri `localhost:3000`
-di `chrome://settings/passwords`.
+The field used to be `type=password`. It is now `type=text` with CSS masking,
+`autocomplete=off`, and password-manager ignore attributes. If Chrome still offers to
+save it, remove the `localhost:3000` entry in `chrome://settings/passwords`.
 
-## Kenapa balasannya lambat?
+## Why are replies slow?
 
-Latency tergantung provider AI. Handler dibatasi maksimal 2 percobaan per pesan, dan
-timeout per percobaan 20 detik. Untuk respons lebih cepat, pilih model Flash/Lite atau
-provider yang lebih dekat. Cek `AI_MODEL` dan `AI_BASE_URL`.
+Latency depends on the AI provider. The handler is capped at two attempts per message,
+with a 20-second timeout per attempt. For faster replies, use a Flash/Lite model or a
+provider with lower latency. Check `AI_MODEL` and `AI_BASE_URL`.
 
-## Apakah aman dibuka dari HP?
+## Is it safe to open from my phone?
 
-Bisa, tapi default-nya hanya PC (`BIND_HOST=127.0.0.1`). Kalau diubah ke `0.0.0.0`,
-perangkat di Wi-Fi yang sama bisa membaca data yang diizinkan. Jangan buka ke internet
-tanpa VPN/PIN/reverse proxy ber-auth. Baca [SECURITY.md](../SECURITY.md).
+It can be, but the default is PC-only (`BIND_HOST=127.0.0.1`). If you change it to
+`0.0.0.0`, devices on the same Wi-Fi can read the data allowed by the LAN endpoints.
+Never expose it to the internet without VPN/PIN/authenticated reverse proxy. See
+[SECURITY.md](../SECURITY.md).
 
-## Apakah nomor saya bisa dibanned?
+## Can my number get banned?
 
-WhatsApp Web tidak resmi. Otomasi berisiko ban. Gunakan nomor cadangan, jangan spam,
-dan hormati kuota/jeda. Tidak ada jaminan.
+WhatsApp Web automation is unofficial. Automation carries a ban risk. Use a spare
+number, avoid spam, and respect the quota/cooldowns. There is no guarantee.
 
-## Di mana data disimpan?
+## Where is data stored?
 
 ```text
-data/app.db          database SQLite
-data/auth/           sesi WhatsApp
-data/status/         gambar status
-.env                 API key + konfigurasi
-profile.md           profil persona
-stickers/            stiker
+data/app.db          SQLite database
+data/auth/           WhatsApp session
+data/status/         status images
+.env                 API keys and config
+profile.md           persona profile
+stickers/            sticker collection
 ```
 
-## Cara backup?
+## How do I back up?
 
-Stop bot, copy seluruh folder `data/`, lalu copy `.env`, `profile.md`, dan `stickers/`.
-Jangan copy `app.db` sendirian saat server hidup karena ada WAL.
+Stop the bot, copy the whole `data/` folder, then copy `.env`, `profile.md`, and
+`stickers/`. Do not copy `app.db` alone while the server is running; SQLite uses WAL.
 
-## Apakah video didukung?
+## Is video supported?
 
-Saat ini gambar dan stiker dikirim ke model vision; pesan suara ditranskrip. Video masih
-dilewati. Dukungan video ada di roadmap.
+Images and stickers are sent to the vision model; voice notes are transcribed. Video is
+currently skipped. Video support is on the roadmap.
 
-## Apakah grup dibalas?
+## Does it reply to groups?
 
-Tidak. Grup hanya dipakai untuk mempelajari gaya ngetik; tidak pernah dibalas.
+No. Groups are only used to learn your typing style; they are never answered.
 
-## Cara update?
+## How do I update?
 
 ```bash
 git pull
@@ -68,4 +70,4 @@ npm ci
 npm start
 ```
 
-Cek [CHANGELOG.md](../CHANGELOG.md) untuk perubahan yang breaking.
+Check [CHANGELOG.md](../CHANGELOG.md) for breaking changes.
