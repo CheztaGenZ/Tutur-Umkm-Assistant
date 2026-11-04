@@ -399,9 +399,10 @@ try {
   // 7. API key tidak bocor.
   const settings = await request({ hostname: '127.0.0.1', port, path: '/api/settings', method: 'GET' });
   const status = await request({ hostname: '127.0.0.1', port, path: '/api/status', method: 'GET' });
+  const apiKey = String(config.ai.apiKey || '');
   check(
     'API key tidak bocor di settings/status',
-    !settings.body.includes(config.ai.apiKey) && !status.body.includes(config.ai.apiKey),
+    !apiKey || (!settings.body.includes(apiKey) && !status.body.includes(apiKey)),
   );
   check('Cache-Control no-store di API', /no-store/.test(status.headers['cache-control'] || ''));
 

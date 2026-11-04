@@ -21,3 +21,4 @@ jobs:
       - run: npm test
         env:
           WA_DISABLED: '1'
+          AI_API_KEY: security-test-key
