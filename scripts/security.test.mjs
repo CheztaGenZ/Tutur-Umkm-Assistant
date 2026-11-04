@@ -59,7 +59,7 @@ const app = createServer({ db, wa, bus });
 const server = app.listen(0, '0.0.0.0');
 await new Promise((resolve) => server.once('listening', resolve));
 const port = server.address().port;
-const base = `http://localhost:${port}`;
+const base = `http://127.0.0.1:${port}`;
 
 const results = [];
 const check = (name, ok, extra = '') => {
@@ -92,7 +92,7 @@ const lan = Object.values(os.networkInterfaces())
 
 try {
   // 1. Header keamanan + tidak membocorkan Express.
-  const home = await request({ hostname: 'localhost', port, path: '/', method: 'GET' });
+  const home = await request({ hostname: '127.0.0.1', port, path: '/', method: 'GET' });
   check('X-Frame-Options: DENY', home.headers['x-frame-options'] === 'DENY');
   check('X-Content-Type-Options: nosniff', home.headers['x-content-type-options'] === 'nosniff');
   check('Referrer-Policy: no-referrer', home.headers['referrer-policy'] === 'no-referrer');
@@ -109,7 +109,7 @@ try {
 
   // 2. Host allowlist (DNS rebinding).
   const evilHost = await request({
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port,
     path: '/',
     method: 'GET',
@@ -120,7 +120,7 @@ try {
   // 3. CSRF: content-type dan Origin.
   const textPost = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/pause',
       method: 'POST',
@@ -132,7 +132,7 @@ try {
 
   const evilOrigin = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/pause',
       method: 'POST',
@@ -144,7 +144,7 @@ try {
 
   const sameOrigin = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/pause',
       method: 'POST',
@@ -156,7 +156,7 @@ try {
 
   const getWithBody = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/status',
       method: 'GET',
@@ -168,7 +168,7 @@ try {
 
   const malformed = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/pause',
       method: 'POST',
@@ -191,7 +191,7 @@ try {
   db.prepare("UPDATE status_jobs SET status = 'sent' WHERE id = 'del_test'").run();
   const deleteStatus = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/status-jobs/del_test',
       method: 'DELETE',
@@ -229,7 +229,7 @@ try {
   });
   const clearRes = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/drafts?status=pending',
       method: 'DELETE',
@@ -258,7 +258,7 @@ try {
   const sendDraft = () =>
     request(
       {
-        hostname: 'localhost',
+        hostname: '127.0.0.1',
         port,
         path: '/api/drafts/race_draft/send',
         method: 'POST',
@@ -287,7 +287,7 @@ try {
   ).run(JSON.stringify(['62811@s.whatsapp.net']));
   const revokeStatus = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/status-jobs/revoke_test/revoke',
       method: 'POST',
@@ -321,13 +321,13 @@ try {
     expiresAt: null,
   });
   const statusList = await request({
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port,
     path: '/api/status-jobs',
     method: 'GET',
   });
   const activityList = await request({
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port,
     path: '/api/activities',
     method: 'GET',
@@ -384,12 +384,12 @@ try {
   qrValue = null;
 
   // 5. Backup lama tidak boleh ke-serve.
-  const backup = await request({ hostname: 'localhost', port, path: '/.backup/index.html', method: 'GET' });
+  const backup = await request({ hostname: '127.0.0.1', port, path: '/.backup/index.html', method: 'GET' });
   check('backup .backup tidak ke-serve', backup.status === 404 || backup.status === 403);
 
   // 6. Path traversal.
   const traversal = await request({
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port,
     path: '/%2e%2e/%2e%2e/.env',
     method: 'GET',
@@ -397,8 +397,8 @@ try {
   check('path traversal .env ditolak', traversal.status === 404 || traversal.status === 403);
 
   // 7. API key tidak bocor.
-  const settings = await request({ hostname: 'localhost', port, path: '/api/settings', method: 'GET' });
-  const status = await request({ hostname: 'localhost', port, path: '/api/status', method: 'GET' });
+  const settings = await request({ hostname: '127.0.0.1', port, path: '/api/settings', method: 'GET' });
+  const status = await request({ hostname: '127.0.0.1', port, path: '/api/status', method: 'GET' });
   check(
     'API key tidak bocor di settings/status',
     !settings.body.includes(config.ai.apiKey) && !status.body.includes(config.ai.apiKey),
@@ -431,7 +431,7 @@ try {
   const bombBody = JSON.stringify({ file: zip.toBuffer().toString('base64') });
   const bomb = await request(
     {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port,
       path: '/api/ingest/unzip',
       method: 'POST',
@@ -459,7 +459,7 @@ try {
 
   const localSseData = { data: '' };
   const lanSseData = { data: '' };
-  const localSse = await readSse('localhost', localSseData);
+  const localSse = await readSse('127.0.0.1', localSseData);
   const lanSse = lan ? await readSse(lan, lanSseData) : null;
   bus.emit('event', { type: 'wa', state: { status: 'qr', qr: 'SSE_QR_SECRET' } });
   await sleep(250);
@@ -495,7 +495,7 @@ try {
   const openSse = () =>
     new Promise((resolve, reject) => {
       const req = http.request(
-        { hostname: 'localhost', port, path: '/api/events', method: 'GET' },
+        { hostname: '127.0.0.1', port, path: '/api/events', method: 'GET' },
         (res) => {
           res.resume();
           resolve({ req, status: res.statusCode });
@@ -511,7 +511,7 @@ try {
     if (s.status !== 200) check(`SSE koneksi ${i + 1}`, false, `status ${s.status}`);
   }
   const extraSse = await request({
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port,
     path: '/api/events',
     method: 'GET',
@@ -526,7 +526,7 @@ try {
   await sleep(100);
 
   for (let i = 0; i < 30; i++) {
-    const req = http.request({ hostname: 'localhost', port, path: '/api/events', method: 'GET' });
+    const req = http.request({ hostname: '127.0.0.1', port, path: '/api/events', method: 'GET' });
     req.on('error', () => {});
     req.end();
     req.destroy();

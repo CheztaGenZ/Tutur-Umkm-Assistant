@@ -43,7 +43,7 @@ let log = '';
 child.stdout.on('data', (d) => (log += d));
 child.stderr.on('data', (d) => (log += d));
 
-const base = `http://localhost:${PORT}`;
+const base = `http://127.0.0.1:${PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForServer() {
