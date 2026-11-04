@@ -39,6 +39,7 @@
 - [Configuration](#configuration)
 - [Data and privacy](#data-and-privacy)
 - [Security](#security)
+- [Verification](#verification)
 - [Documentation](#documentation)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -92,10 +93,28 @@ step-by-step reply flow in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 
 ## Demo
 
-![Draft queue](docs/assets/demo/drafts.jpg)
+<p align="center">
+  <a href="docs/assets/demo/demo.mp4">
+    <img src="docs/assets/demo/drafts.jpg" alt="WA Reply AI dashboard demo" width="100%" />
+  </a>
+</p>
 
-> Demo preview with fake contacts and drafts. No real chats, names, or phone numbers.
-> The demo instance runs with WhatsApp disabled; connect your own number locally.
+> Click the image to play the 21-second demo video. Demo data only. No real chats,
+> names, or phone numbers. The video is a slideshow built from screenshots of a local
+> demo instance and the CI success page.
+
+<details>
+<summary>More screenshots</summary>
+
+| Contacts | Status |
+|---|---|
+| ![Contacts](docs/assets/demo/contacts.jpg) | ![Status](docs/assets/demo/status.jpg) |
+
+| Settings | CI success |
+|---|---|
+| ![Settings](docs/assets/demo/settings.jpg) | ![CI](docs/assets/demo/ci.jpg) |
+
+</details>
 
 ## Quick start
 
@@ -166,11 +185,19 @@ Back up by stopping the bot and copying `data/`, `.env`, `profile.md`, and
 - Report vulnerabilities privately via [SECURITY.md](SECURITY.md).
 - No cloud database, no analytics, no hidden telemetry. Read [docs/TRUST.md](docs/TRUST.md).
 
+## Verification
+
+- `npm test`: **47 handler + 11 status + 42 security + 31 smoke** checks
+- GitHub Actions `test` workflow passes on `main`
+- Demo screenshots use fake contacts and drafts, never real chats
+- Details and honest limitations: [docs/VERIFICATION.md](docs/VERIFICATION.md)
+
 ## Documentation
 
 - [Installation](docs/INSTALL.md)
 - [How it works](docs/HOW_IT_WORKS.md)
 - [Trust and transparency](docs/TRUST.md)
+- [Verification](docs/VERIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [FAQ](docs/FAQ.md)
