@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Proposal Tutur - AIWIC Bali DigiFest 2026</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    color: #221c17;
+    font-size: 10.2pt;
+    line-height: 1.5;
+  }
+  h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; margin: 0; }
+  h1 { font-size: 26pt; line-height: 1.05; letter-spacing: -0.01em; }
+  h2 { font-size: 14pt; margin: 14pt 0 4pt; color: #a94b25; }
+  h3 { font-size: 10.5pt; margin: 8pt 0 2pt; }
+  p { margin: 0 0 5pt; }
+  ul { margin: 2pt 0 6pt 14pt; padding: 0; }
+  li { margin-bottom: 2pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9.2pt; }
+  th, td { text-align: left; padding: 4pt 6pt; border-bottom: 1px solid #ded2bf; vertical-align: top; }
+  th { background: #f4efe5; font-weight: 600; }
+  .cover { page-break-after: always; padding-top: 32mm; }
+  .mark { width: 46px; height: 46px; border-radius: 12px; background: #a94b25; color: #fff8ef; display: grid; place-items: center; font-family: Georgia, serif; font-size: 26px; margin-bottom: 14mm; }
+  .cover .tag { color: #a94b25; font-weight: 600; font-size: 10pt; margin-bottom: 6pt; }
+  .cover .sub { font-size: 13pt; color: #6f6357; margin-top: 8pt; max-width: 130mm; }
+  .cover .meta { margin-top: 26mm; font-size: 10pt; }
+  .cover .meta td { border: 0; padding: 2pt 0; }
+  .page-break { page-break-before: always; }
+  .lead { font-size: 10.8pt; color: #4a4038; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .box { border: 1px solid #ded2bf; border-radius: 8px; padding: 8pt 10pt; background: #fffdf8; }
+  .diagram { font-family: Consolas, monospace; font-size: 8.2pt; line-height: 1.55; white-space: pre; background: #fbf7ef; border: 1px solid #ded2bf; border-radius: 8px; padding: 8pt 10pt; }
+  .small { font-size: 8.6pt; color: #6f6357; }
+  .quote { border-left: 3px solid #a94b25; padding-left: 9pt; color: #4a4038; margin: 6pt 0 8pt; }
+  .footer { margin-top: 10pt; font-size: 8pt; color: #6f6357; border-top: 1px solid #ded2bf; padding-top: 4pt; }
+  .check { color: #2f6b4f; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="mark">T</div>
+  <div class="tag">BALI DIGIFEST 2026 · AI WEB INNOVATION CHALLENGE</div>
+  <h1>Tutur</h1>
+  <p class="sub">AI concierge untuk warung dan homestay Bali. Balas seperti pemiliknya, jawab dari data bisnis yang benar, dan tahu kapan harus diam.</p>
+  <table class="meta">
+    <tr><td><strong>Nama tim</strong></td><td>[NAMA TIM]</td></tr>
+    <tr><td><strong>Anggota</strong></td><td>[ANGGOTA 1], [ANGGOTA 2], [ANGGOTA 3]</td></tr>
+    <tr><td><strong>Asal instansi</strong></td><td>[KAMPUS / KOMUNITAS]</td></tr>
+    <tr><td><strong>Kontak ketua</strong></td><td>[EMAIL] · [WHATSAPP]</td></tr>
+    <tr><td><strong>Kategori</strong></td><td>Mahasiswa/Umum</td></tr>
+    <tr><td><strong>Tanggal</strong></td><td>7 November 2026</td></tr>
+  </table>
+</section>
+
+<h2>1. Problem &amp; Background</h2>
+<p class="lead">Pemilik warung dan homestay di Bali menerima chat pelanggan dalam dua bahasa, sering di jam sibuk. Balasan yang lambat kehilangan tamu. Balasan yang cepat tetapi salah harga merusak kepercayaan.</p>
+<p>BPS Bali mencatat 6,95 juta kunjungan wisatawan mancanegara sepanjang 2025. BPS Bali juga memperkirakan ada sekitar 600 ribu usaha di Bali. Sebagian besar usaha ini tidak punya tim customer service. WhatsApp menjadi kanal utama, dan pemiliknya juga yang memasak, mengantar, atau menerima tamu.</p>
+<p>Masalah yang muncul:</p>
+<ul>
+  <li>Pertanyaan berulang soal menu, harga, jam buka, dan lokasi memakan waktu pemilik.</li>
+  <li>Pesan masuk dalam bahasa Inggris, sementara pemilik lebih nyaman berbahasa Indonesia.</li>
+  <li>Chatbot template mengarang harga dan mengonfirmasi booking yang belum tentu tersedia.</li>
+  <li>Balasan otomatis yang terlalu agresif justru mengganggu pelanggan dan berisiko membuat nomor diblokir.</li>
+</ul>
+<p class="small">Sumber: BPS Bali melalui Antara Bali (3 Februari 2026) dan Antara Bali (2026) untuk perkiraan jumlah usaha.</p>
+
+<h2>2. Target User</h2>
+<p>Pemilik warung, homestay, dan usaha wisata skala kecil di Bali dengan 1 sampai 10 staf. Mereka memakai WhatsApp sebagai kanal utama, belum punya CRM, dan tidak punya waktu untuk membalas satu per satu.</p>
+<div class="two">
+  <div class="box"><h3>Kebutuhan</h3><p class="small">Balasan cepat dalam dua bahasa, jawaban yang konsisten dengan harga asli, dan notifikasi hanya untuk pesan yang butuh keputusan pemilik.</p></div>
+  <div class="box"><h3>Pain point</h3><p class="small">Takut salah menjawab, tidak sempat memantau chat, dan pernah kehilangan calon tamu karena balasan datang terlalu lama.</p></div>
+</div>
+
+<h2>3. Proposed Solution</h2>
+<p>Tutur adalah lapisan AI di atas WhatsApp. Pemilik menghubungkan nomor, mengisi data bisnis, dan memilih mode per kontak. Tutur membalas pertanyaan fakta, menahan pesan berisiko, dan menampilkan alasan setiap keputusan.</p>
+<h3>User journey</h3>
+<ol>
+  <li>Pemilik mengisi menu, harga, jam buka, lokasi, dan kebijakan.</li>
+  <li>Pelanggan mengirim chat. Tutur mendeteksi bahasa dan maksud pesan.</li>
+  <li>Untuk pertanyaan fakta, Tutur menjawab dari data bisnis dengan gaya bicara pemilik.</li>
+  <li>Untuk booking, pesanan, komplain, atau alergi, balasan disimpan sebagai draft dan pemilik mendapat notifikasi.</li>
+  <li>Untuk spam dan nomor VIP, Tutur tidak membalas.</li>
+</ol>
+<div class="quote">Tesis produk: bot lain mengoptimalkan jumlah balasan. Tutur mengoptimalkan kepercayaan, termasuk dengan tidak membalas saat memang tidak seharusnya.</div>
+
+<h2>4. AI Implementation</h2>
+<table>
+  <tr><th>Bagian</th><th>Metode</th><th>Input dan output</th></tr>
+  <tr><td>Grounding</td><td>Retrieval kata kunci terhadap knowledge base SQLite</td><td>Pesan pelanggan menjadi maksimal 3 baris data bisnis yang relevan</td></tr>
+  <tr><td>Generasi</td><td>LLM melalui API kompatibel OpenAI, default deepseek-chat</td><td>Persona pemilik, riwayat chat, dan data bisnis menjadi balasan</td></tr>
+  <tr><td>Intent</td><td>Klasifikasi oleh LLM ditambah penjaga kata kunci deterministik</td><td>Pesan menjadi intent dan flag needs_owner</td></tr>
+  <tr><td>Kebijakan</td><td>Aturan eksplisit di kode</td><td>Keputusan auto, draft, atau ignore beserta alasannya</td></tr>
+</table>
+<p><strong>Mengapa AI diperlukan:</strong> variasi bahasa pelanggan terlalu besar untuk aturan if-else. Pelanggan menulis singkatan, campur bahasa, dan typo. AI membaca maksud pesan dan menulis balasan yang terdengar seperti manusia. Retrieval menjaga fakta tetap berasal dari data pemilik, bukan dari pengetahuan umum model.</p>
+<p><strong>Batasan:</strong> model kecil bisa salah memberi label intent. Karena itu ada penjaga deterministik: pesan booking, pesanan, dan komplain selalu menjadi draft, walaupun model memberi label lain.</p>
+
+<h3>Hasil evaluasi</h3>
+<p>20 pertanyaan dijalankan dua kali dengan model yang sama. Baseline menjawab dari pengetahuan umum tanpa data bisnis. Tutur memakai retrieval.</p>
+<table>
+  <tr><th>Metrik</th><th>Tanpa knowledge base</th><th>Tutur</th></tr>
+  <tr><td>Jawaban benar</td><td>11/20</td><td><strong>20/20</strong></td></tr>
+  <tr><td>Harga karangan pada fakta yang tidak tersedia</td><td>tidak diukur</td><td><strong>0</strong></td></tr>
+  <tr><td>Booking dan komplain dieskalasi</td><td>tidak konsisten</td><td><strong>3/3</strong></td></tr>
+</table>
+<p class="small">Metode: penilaian otomatis berbasis kata kunci pada 20 pertanyaan. Bukan penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
+
+<h2>5. MVP &amp; Key Features</h2>
+<table>
+  <tr><th>Status</th><th>Fitur</th><th>Bukti</th></tr>
+  <tr><td class="check">Berfungsi</td><td>Judge playground publik tanpa login</td><td>Enam skenario mengubah keputusan policy</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Knowledge base dan jawaban bersumber</td><td>Chip sumber di decision trace</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Eskalasi booking, pesanan, komplain</td><td>Selalu draft, tidak pernah auto</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Spam dan VIP tidak dibalas</td><td>Skenario spam menghasilkan ignore</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Persona dari export chat</td><td>Style engine dan few-shot contoh asli</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Dashboard draft, kontak, knowledge, metrik</td><td>Akses dengan token admin</td></tr>
+  <tr><td class="small">Tambahan</td><td>Vision, voice note, status terjadwal</td><td>Dari mesin lama, tidak dipakai di jalur juri</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>6. Technical Architecture</h2>
+<div class="diagram">Pelanggan (playground / WhatsApp)
+        |
+        v
+  [ policy gate ]  --ignore--> tidak ada balasan
+        |
+        v
+  [ retrieval knowledge base SQLite ]
+        |
+        v
+  [ LLM: persona + fakta + riwayat ]
+        |
+        v
+  auto / draft / ignore  +  decision trace
+        |
+        v
+  [ dashboard ]  [ draft queue ]  [ metrik dampak ]</div>
+<table>
+  <tr><th>Lapisan</th><th>Teknologi</th><th>Alasan</th></tr>
+  <tr><td>Runtime</td><td>Node.js 22, Express 4</td><td>Satu proses untuk API, dashboard, dan playground</td></tr>
+  <tr><td>Database</td><td>SQLite (node:sqlite)</td><td>Satu tenant, data chat sensitif tetap di mesin sendiri, biaya nol</td></tr>
+  <tr><td>AI</td><td>API kompatibel OpenAI</td><td>Bisa ganti provider tanpa mengubah kode produk</td></tr>
+  <tr><td>Frontend</td><td>HTML, CSS, ES modules</td><td>Tanpa build step, mudah diaudit juri</td></tr>
+  <tr><td>WhatsApp</td><td>Baileys</td><td>Transport opsional, dimatikan saat penjurian</td></tr>
+</table>
+<p><strong>Jalur yang diuji juri:</strong> playground memanggil fungsi <em>generateReply</em> dan <em>decide</em> yang sama dengan jalur WhatsApp. Yang berbeda hanya pintu masuknya, yaitu HTTP, bukan socket WhatsApp. Karena itu demo bukan mockup.</p>
+
+<h2>7. Innovation &amp; Differentiation</h2>
+<table>
+  <tr><th>Solusi existing</th><th>Keterbatasan</th><th>Tutur</th></tr>
+  <tr><td>Quick reply dan template</td><td>Kaku, tidak paham konteks</td><td>Meniru gaya menulis pemilik</td></tr>
+  <tr><td>Chatbot FAQ</td><td>Mengarang saat jawaban tidak ada</td><td>Menahan diri dan meminta konfirmasi pemilik</td></tr>
+  <tr><td>Auto-reply agresif</td><td>Membalas semua pesan, termasuk spam</td><td>Memilih auto, draft, atau ignore</td></tr>
+  <tr><td>Dashboard analytics</td><td>Alasan keputusan tidak terlihat</td><td>Decision trace yang bisa dibaca juri</td></tr>
+</table>
+<p><strong>Pembeda utama:</strong> Tutur tidak hanya mengatur apa yang dikatakan, tetapi juga kapan AI boleh bicara. Untuk usaha kecil, kepercayaan lebih penting daripada jumlah balasan.</p>
+
+<h2>8. Impact &amp; Development Potential</h2>
+<p>Dampak yang dituju: pemilik tidak perlu membalas pertanyaan berulang, tamu mendapat jawaban dalam hitungan detik, dan pesan berisiko tetap sampai ke manusia.</p>
+<ul>
+  <li><strong>Waktu:</strong> pertanyaan fakta diselesaikan otomatis. Metrik di playground memisahkan data simulasi dari sesi live.</li>
+  <li><strong>Pendapatan:</strong> balasan cepat di luar jam kerja menjaga calon tamu tetap dalam percakapan.</li>
+  <li><strong>Risiko:</strong> booking dan komplain tidak pernah dikonfirmasi otomatis.</li>
+</ul>
+<p><strong>Pengembangan berikutnya:</strong> pencarian semantik untuk katalog besar, sinkronisasi harga dari POS, dukungan multi-cabang, dan evaluasi dengan pemilik usaha nyata. Skala multi-tenant memerlukan Postgres dan antrean pesan.</p>
+<p><strong>Keterbatasan MVP:</strong> belum ada pilot dengan pelanggan nyata, evaluasi masih 20 pertanyaan, dan retrieval berbasis kata kunci. Semua angka dampak di UI diberi label simulasi.</p>
+
+<h2>9. Technology Disclosure</h2>
+<table>
+  <tr><th>Komponen</th><th>Isi</th></tr>
+  <tr><td>Framework / frontend</td><td>HTML, CSS, ES modules</td></tr>
+  <tr><td>Backend / runtime</td><td>Node.js 22, Express 4</td></tr>
+  <tr><td>Database / hosting</td><td>SQLite, Node host dengan persistent disk</td></tr>
+  <tr><td>AI</td><td>deepseek-chat melalui API kompatibel OpenAI</td></tr>
+  <tr><td>Library</td><td>express, dotenv, baileys, qrcode, pino, adm-zip, transformers, ffmpeg-installer</td></tr>
+  <tr><td>AI coding assistant</td><td>OpenCode dengan model DeepSeek</td></tr>
+  <tr><td>Pre-existing</td><td>WA Reply AI (persona, policy, transport, dashboard). Rincian di PRE-EXISTING.md</td></tr>
+  <tr><td>Aset</td><td>Google Fonts: Fraunces, Plus Jakarta Sans, JetBrains Mono. Ikon ditulis sendiri</td></tr>
+</table>
+
+<h2>10. Submission Links</h2>
+<table>
+  <tr><th>Item</th><th>Nilai</th></tr>
+  <tr><td>Repository GitHub</td><td>https://github.com/CheztaGenZ/WhatsApp-Auto-Reply</td></tr>
+  <tr><td>Commit / tag</td><td>v1.0-submission</td></tr>
+  <tr><td>URL deployment</td><td>[URL DEPLOY]</td></tr>
+  <tr><td>Judge playground</td><td>[URL DEPLOY]/playground</td></tr>
+  <tr><td>Akun demo</td><td>Tidak perlu login untuk playground. Dashboard memakai token yang dikirim melalui kanal panitia</td></tr>
+</table>
+<p class="small">Dokumen pendukung: README.md, AI-TECHNOLOGY-DISCLOSURE.md, PRE-EXISTING.md, DESIGN.md, docs/eval-results.md.</p>
+<div class="footer">Tutur · Bali DigiFest 2026 · AI Web Innovation Challenge</div>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: tutur-demo
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/public/playground/state
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: BIND_HOST
+        value: 0.0.0.0
+      - key: DEMO_MODE
+        value: "1"
+      - key: WA_DISABLED
+        value: "1"
+      - key: QUIET_HOURS
+        value: "off"
+      - key: DATA_DIR
+        value: /var/data
+      - key: AI_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: AI_MODEL
+        value: deepseek-chat
+      - key: BUSINESS_NAME
+        value: Sari Kitchen
+      - key: DEMO_OWNER
+        value: Sari
+      - key: AI_API_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+    disk:
+      name: tutur-data
+      mountPath: /var/data
+      sizeGB: 1
