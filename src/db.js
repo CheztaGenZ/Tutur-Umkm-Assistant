@@ -996,3 +996,14 @@ export function listOrders(db, ownerId, limit = 100) {
     .prepare('SELECT * FROM orders WHERE owner_id = ? ORDER BY created_at DESC LIMIT ?')
     .all(String(ownerId), limit);
 }
+
+export function updateOrderStatus(db, ownerId, id, status) {
+  const allowed = ['pending', 'done', 'cancelled'];
+  const cleanStatus = String(status || '').trim();
+  if (!allowed.includes(cleanStatus)) throw new Error('Status pesanan tidak dikenal');
+  const result = db
+    .prepare('UPDATE orders SET status = ? WHERE id = ? AND owner_id = ?')
+    .run(cleanStatus, String(id), String(ownerId));
+  if (!result.changes) return null;
+  return db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(String(id), String(ownerId));
+}

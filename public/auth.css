@@ -427,6 +427,14 @@ textarea:focus {
   font-size: 13px;
 }
 
+.order-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex: none;
+}
+
 .order-total {
   text-align: right;
   flex: none;
@@ -443,12 +451,63 @@ textarea:focus {
   color: var(--muted);
 }
 
+.order-status.status-done {
+  color: #2f6b45;
+  font-weight: 600;
+}
+
+.order-status.status-cancelled {
+  color: #9b3b2e;
+  font-weight: 600;
+}
+
+.order-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.order-action {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.order-action:hover {
+  border-color: var(--clay);
+}
+
+.order-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.order.is-done {
+  opacity: 0.85;
+}
+
+.order.is-cancelled {
+  opacity: 0.65;
+}
+
 @media (max-width: 560px) {
   .order {
     flex-direction: column;
   }
+  .order-side {
+    align-items: flex-start;
+  }
   .order-total {
     text-align: left;
+  }
+  .order-actions {
+    justify-content: flex-start;
   }
 }
 

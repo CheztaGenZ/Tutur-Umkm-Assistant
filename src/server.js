@@ -403,6 +403,22 @@ export function createServer({ db, wa, bus }) {
     res.json({ orders: store.listOrders(db, req.user.id) });
   });
 
+  app.patch('/api/orders/:id', express.json({ limit: '16kb' }), (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    try {
+      const saved = store.updateOrderStatus(
+        db,
+        req.user.id,
+        req.params.id,
+        req.body?.status,
+      );
+      if (!saved) return res.status(404).json({ error: 'Pesanan tidak ditemukan.' });
+      res.json({ saved, orders: store.listOrders(db, req.user.id) });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
   const startOAuth = (provider) => (req, res) => {
     const conf = config.auth;
     const id = provider === 'google' ? conf.googleId : conf.facebookId;
