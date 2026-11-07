@@ -69,6 +69,35 @@ Set `ALLOWED_HOSTS` to the public domain.
 5. Check `/api/status` without a token. It must return 403, not data.
 6. Confirm no API key appears in the page source or the repository.
 
+## Google and Facebook login
+
+Email and password work without any extra setup. Google and Facebook need
+credentials, and the buttons explain that they are not configured until then.
+
+### Google
+
+1. Open `console.cloud.google.com`, create a project, then open APIs and
+   Services, OAuth consent screen. Choose External, fill the app name and support
+   email, and add the scopes `email` and `profile`.
+2. Open Credentials, Create credentials, OAuth client ID, Web application.
+3. Add authorized redirect URI: `https://<domain>/auth/google/callback`. Add
+   `http://localhost:3210/auth/google/callback` for local testing.
+4. Copy the Client ID and Client Secret into `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`.
+
+### Facebook
+
+1. Open `developers.facebook.com`, create an app of type Consumer, then add the
+   Facebook Login product.
+2. In Facebook Login settings, add valid OAuth redirect URI:
+   `https://<domain>/auth/facebook/callback`.
+3. Open App settings, Basic, and copy the App ID and App Secret into
+   `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET`.
+4. While the app is in Development mode, only added test users can log in. Switch
+   to Live before judging.
+
+Set `PUBLIC_BASE_URL` to the public origin so callbacks match exactly.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

@@ -23,6 +23,21 @@ questions they did not need to see.
 Target user: the owner of a small hospitality business with 1 to 10 staff, no
 dedicated customer service team, and WhatsApp as the main channel.
 
+## Accounts and product catalog
+
+Owners can create an account with email and password, or sign in with Google and
+Facebook. The account stores the business knowledge base and the product
+catalog, so the menu does not need to be filled in again on the next visit.
+
+The catalog lives at `/katalog`. Every product saved there is written into the
+knowledge base automatically, so the AI answers price and availability
+questions from the same data. Deleting or updating a product updates the AI
+source in the same step.
+
+OAuth needs provider credentials. Without them the buttons explain that the
+provider is not configured yet and email login still works. Setup steps are in
+`docs/DEPLOY.md`.
+
 ## What Tutur does
 
 1. **Writes like the owner.** The style engine learns message length, casing,
@@ -145,6 +160,9 @@ an ephemeral filesystem.
 
 - WhatsApp transport is disabled for judging to avoid account risk. The web
   playground exercises the same AI and policy code.
+- Accounts isolate the product catalog and business knowledge. Chat history and
+  typing-style training still use one workspace in this MVP, so they are not yet
+  separated per account.
 - Retrieval is keyword based. It handles the demo knowledge base well, but a
   larger catalogue needs embeddings or a proper search index.
 - SQLite suits a single-tenant deployment. Multi-tenant SaaS would need Postgres.

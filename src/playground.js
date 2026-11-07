@@ -33,6 +33,7 @@ export function createPlayground({
   generateReply = defaultGenerateReply,
   decide = defaultDecide,
   now = Date.now,
+  ownerId = 'demo',
 }) {
   const sessions = new Map();
   const buckets = new Map();
@@ -130,7 +131,7 @@ export function createPlayground({
 
     const started = now();
     try {
-      const knowledge = searchKnowledge(store.listKnowledge(db), text, 3);
+      const knowledge = searchKnowledge(store.listKnowledge(db, { ownerId, activeOnly: true }), text, 3);
       const result = await generateReply({
         meName: config.me,
         contactName: contact.alias || contact.name || 'Pelanggan',

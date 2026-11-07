@@ -2,6 +2,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import * as store from './db.js';
@@ -19,6 +20,17 @@ import { decide, dayStart, hourStart } from './policy.js';
 import { createPlayground } from './playground.js';
 import { DEMO_BUSINESS, DEMO_PERSONAS, DEMO_SCENARIOS } from './demo/personas.js';
 import { getSettings, saveSettings, testSettings, isLocalRequest, isPrivateRemote, publicBaseUrl } from './settings.js';
+import {
+  parseCookies,
+  serializeCookie,
+  createUser,
+  authenticate,
+  createSession,
+  getSessionUser,
+  deleteSession,
+  upsertOAuthUser,
+} from './auth.js';
+import * as products from './products.js';
 import AdmZip from 'adm-zip';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -132,13 +144,24 @@ export function createServer({ db, wa, bus }) {
   });
 
   const adminAllowed = (req) => {
+    if (req.user) return true;
     if (!config.demo.enabled) return false;
     const token = config.demo.adminToken;
     if (!token) return false;
     return req.get('x-admin-token') === token || req.query?.token === token;
   };
 
+  const dashboardAllowed = (req) =>
+    adminAllowed(req) || (!config.demo.enabled && isPrivateRemote(req));
+
   const playground = createPlayground({ db });
+
+  app.use((req, res, next) => {
+    req.cookies = parseCookies(req.headers.cookie);
+    req.sessionToken = req.cookies.tutur_session || '';
+    req.user = getSessionUser(db, req.sessionToken);
+    next();
+  });
 
   // ---------------------- public playground (tanpa login) ----------------------
   const publicHits = new Map();
@@ -200,6 +223,205 @@ export function createServer({ db, wa, bus }) {
     res.json(playground.metrics());
   });
 
+  /* ---------------------------------- akun ---------------------------------- */
+
+  const sessionCookie = (req, res, token) => {
+    const secure = String(config.auth.publicBaseUrl || '').startsWith('https') || req.secure;
+    res.append(
+      'Set-Cookie',
+      serializeCookie('tutur_session', token, {
+        maxAge: 7 * 24 * 60 * 60,
+        secure,
+        sameSite: 'Lax',
+      }),
+    );
+  };
+
+  const originBase = (req) => config.auth.publicBaseUrl || `${req.protocol}://${req.get('host')}`;
+
+  const publicUser = (user) =>
+    user
+      ? { id: user.id, email: user.email, name: user.name, avatar: user.avatar_url || '' }
+      : null;
+
+  app.post('/api/public/auth/register', (req, res) => {
+    try {
+      const user = createUser(db, {
+        name: req.body?.name,
+        email: req.body?.email,
+        password: req.body?.password,
+      });
+      const token = createSession(db, user.id);
+      sessionCookie(req, res, token);
+      res.json({ user: publicUser(user) });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/public/auth/login', (req, res) => {
+    const user = authenticate(db, req.body?.email, req.body?.password);
+    if (!user) return res.status(401).json({ error: 'Email atau password tidak cocok.' });
+    const token = createSession(db, user.id);
+    sessionCookie(req, res, token);
+    res.json({ user: publicUser(user) });
+  });
+
+  app.post('/api/public/auth/logout', (req, res) => {
+    deleteSession(db, req.sessionToken);
+    res.append('Set-Cookie', serializeCookie('tutur_session', '', { maxAge: 0 }));
+    res.json({ ok: true });
+  });
+
+  app.get('/api/public/auth/me', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ user: publicUser(req.user) });
+  });
+
+  const startOAuth = (provider) => (req, res) => {
+    const conf = config.auth;
+    const id = provider === 'google' ? conf.googleId : conf.facebookId;
+    if (!id || (provider === 'google' ? !conf.googleSecret : !conf.facebookSecret)) {
+      return res.redirect(`/masuk?error=${provider}_belum_diatur`);
+    }
+    const state = crypto.randomBytes(16).toString('hex');
+    const secure = String(conf.publicBaseUrl || '').startsWith('https') || req.secure;
+    res.append('Set-Cookie', serializeCookie('oauth_state', state, { maxAge: 600, secure }));
+    const redirect = `${originBase(req)}/auth/${provider}/callback`;
+    const url =
+      provider === 'google'
+        ? `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+            client_id: id,
+            redirect_uri: redirect,
+            response_type: 'code',
+            scope: 'openid email profile',
+            state,
+            prompt: 'select_account',
+          })}`
+        : `https://www.facebook.com/v19.0/dialog/oauth?${new URLSearchParams({
+            client_id: id,
+            redirect_uri: redirect,
+            scope: 'email,public_profile',
+            state,
+          })}`;
+    res.redirect(url);
+  };
+
+  app.get('/auth/google', startOAuth('google'));
+  app.get('/auth/facebook', startOAuth('facebook'));
+
+  const finishOAuth = (provider) => async (req, res) => {
+    try {
+      const state = req.cookies?.oauth_state;
+      if (!state || state !== req.query.state) throw new Error('State OAuth tidak cocok.');
+      const code = String(req.query.code || '');
+      if (!code) throw new Error('Kode OAuth kosong.');
+      const conf = config.auth;
+      const redirect = `${originBase(req)}/auth/${provider}/callback`;
+      let profile;
+
+      if (provider === 'google') {
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: conf.googleId,
+            client_secret: conf.googleSecret,
+            redirect_uri: redirect,
+            grant_type: 'authorization_code',
+          }),
+        });
+        if (!tokenRes.ok) throw new Error('Gagal menukar kode Google.');
+        const token = await tokenRes.json();
+        const infoRes = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+        if (!infoRes.ok) throw new Error('Gagal mengambil profil Google.');
+        const info = await infoRes.json();
+        profile = {
+          providerId: info.sub,
+          email: info.email,
+          name: info.name,
+          avatar: info.picture,
+        };
+      } else {
+        const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?${new URLSearchParams({
+          client_id: conf.facebookId,
+          client_secret: conf.facebookSecret,
+          redirect_uri: redirect,
+          code,
+        })}`;
+        const tokenRes = await fetch(tokenUrl);
+        if (!tokenRes.ok) throw new Error('Gagal menukar kode Facebook.');
+        const token = await tokenRes.json();
+        const infoRes = await fetch(
+          `https://graph.facebook.com/me?${new URLSearchParams({
+            fields: 'id,name,email,picture',
+            access_token: token.access_token,
+          })}`,
+        );
+        if (!infoRes.ok) throw new Error('Gagal mengambil profil Facebook.');
+        const info = await infoRes.json();
+        profile = {
+          providerId: info.id,
+          email: info.email,
+          name: info.name,
+          avatar: info.picture?.data?.url,
+        };
+      }
+
+      const user = upsertOAuthUser(db, { provider, ...profile });
+      const token = createSession(db, user.id);
+      sessionCookie(req, res, token);
+      res.append('Set-Cookie', serializeCookie('oauth_state', '', { maxAge: 0 }));
+      res.redirect('/katalog');
+    } catch (err) {
+      res.redirect(`/masuk?error=${provider}_gagal`);
+    }
+  };
+
+  app.get('/auth/google/callback', finishOAuth('google'));
+  app.get('/auth/facebook/callback', finishOAuth('facebook'));
+
+  app.use(['/api/products', '/api/knowledge'], express.json({ limit: '1mb' }));
+
+  /* -------------------------------- katalog -------------------------------- */
+
+  const ownerId = (req) => req.user?.id || 'demo';
+
+  app.get('/api/products', (req, res) => {
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    res.json({ products: products.listProducts(db, ownerId(req)) });
+  });
+
+  app.post('/api/products', (req, res) => {
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    try {
+      const item = products.createProduct(db, { ownerId: ownerId(req), ...(req.body || {}) });
+      res.json({ products: products.listProducts(db, ownerId(req)), saved: item });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/products/:id', (req, res) => {
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    try {
+      const item = products.updateProduct(db, req.params.id, ownerId(req), req.body || {});
+      res.json({ products: products.listProducts(db, ownerId(req)), saved: item });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/products/:id', (req, res) => {
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    const ok = products.deleteProduct(db, req.params.id, ownerId(req));
+    if (!ok) return res.status(404).json({ error: 'Produk tidak ditemukan.' });
+    res.json({ products: products.listProducts(db, ownerId(req)) });
+  });
+
   app.use('/api', (req, res, next) => {
     if (adminAllowed(req)) return next();
     if (config.demo.enabled) {
@@ -254,6 +476,15 @@ export function createServer({ db, wa, bus }) {
   app.get('/playground', (req, res) => {
     res.sendFile(path.join(publicDir, 'playground.html'));
   });
+  app.get('/masuk', (req, res) => {
+    res.sendFile(path.join(publicDir, 'masuk.html'));
+  });
+  app.get('/daftar', (req, res) => {
+    res.sendFile(path.join(publicDir, 'daftar.html'));
+  });
+  app.get('/katalog', (req, res) => {
+    res.sendFile(path.join(publicDir, 'katalog.html'));
+  });
   app.get('/playground.css', (req, res) => {
     res.type('text/css').sendFile(path.join(publicDir, 'playground.css'));
   });
@@ -264,22 +495,31 @@ export function createServer({ db, wa, bus }) {
   /* ------------------------------- knowledge -------------------------------- */
 
   app.get('/api/knowledge', (req, res) => {
-    res.json({ knowledge: store.listKnowledge(db) });
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    res.json({ knowledge: store.listKnowledge(db, { ownerId: ownerId(req) }) });
   });
 
   app.post('/api/knowledge', (req, res) => {
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
     try {
-      const row = store.upsertKnowledge(db, req.body || {});
-      res.json({ knowledge: store.listKnowledge(db), saved: row });
+      const row = store.upsertKnowledge(db, { ...(req.body || {}), ownerId: ownerId(req) });
+      res.json({
+        knowledge: store.listKnowledge(db, { ownerId: ownerId(req) }),
+        saved: row,
+      });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   });
 
   app.delete('/api/knowledge/:id', (req, res) => {
-    const ok = store.deleteKnowledge(db, req.params.id);
-    if (!ok) return res.status(404).json({ error: 'Sumber tidak ditemukan.' });
-    res.json({ knowledge: store.listKnowledge(db) });
+    if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
+    const row = store.getKnowledge(db, req.params.id);
+    if (!row || row.owner_id !== ownerId(req)) {
+      return res.status(404).json({ error: 'Sumber tidak ditemukan.' });
+    }
+    store.deleteKnowledge(db, req.params.id);
+    res.json({ knowledge: store.listKnowledge(db, { ownerId: ownerId(req) }) });
   });
 
   /* --------------------------------- status -------------------------------- */

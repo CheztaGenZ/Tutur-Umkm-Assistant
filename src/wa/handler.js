@@ -542,7 +542,7 @@ export function createMessageHandler({ db, wa, bus }) {
         : [];
 
       const knowledge = searchKnowledge(
-        store.listKnowledge(db, { activeOnly: true }),
+        store.listKnowledge(db, { activeOnly: true, ownerId: 'demo' }),
         incomingBody,
         3,
       );

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Buat akun - Tutur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/auth.css" />
+  </head>
+  <body data-page="daftar">
+    <main class="auth-shell">
+      <a class="brand" href="/">
+        <span class="brand-mark">T</span>
+        <span>
+          <strong>Tutur</strong>
+          <small>Asisten chat untuk usaha Anda</small>
+        </span>
+      </a>
+
+      <section class="card">
+        <h1>Buat akun</h1>
+        <p class="lede">Sekali daftar, menu dan data bisnis Anda tersimpan dan dipakai Tutur setiap hari.</p>
+
+        <div class="alert" id="alert" hidden></div>
+
+        <form id="auth-form" novalidate>
+          <div class="field">
+            <label for="name">Nama Anda</label>
+            <input id="name" name="name" type="text" autocomplete="name" required placeholder="Contoh: Wayan Sari" />
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required placeholder="nama@email.com" />
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                required
+                minlength="8"
+                placeholder="Minimal 8 karakter"
+              />
+              <button class="show-password" type="button" data-toggle="password">Lihat</button>
+            </div>
+            <span class="hint">Gunakan minimal 8 karakter. Anda bisa memakai huruf, angka, atau simbol.</span>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="submit">Buat akun</button>
+        </form>
+
+        <div class="divider">atau daftar dengan</div>
+
+        <div class="stack">
+          <a class="btn btn-google" href="/auth/google">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.4 17.6 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-2.8-.4-4.1H24v8.4h12.5c-.3 2.1-1.7 5.2-4.8 7.3l7.6 5.9c4.5-4.2 6.8-10.3 6.8-17.5z"/>
+              <path fill="#FBBC05" d="M10.4 28.7A14.6 14.6 0 0 1 9.6 24c0-1.6.3-3.2.8-4.7l-7.8-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.8-6.1z"/>
+              <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2 1.4-4.7 2.4-7.6 2.4-6.4 0-11.7-3.9-13.6-9.3l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/>
+            </svg>
+            Google
+          </a>
+          <a class="btn btn-facebook" href="/auth/facebook">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4h-2.5V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 3.5h-2.3v8.4A12 12 0 0 0 24 12z"/>
+            </svg>
+            Facebook
+          </a>
+        </div>
+
+        <p class="switch">Sudah punya akun? <a href="/masuk">Masuk</a></p>
+      </section>
+    </main>
+
+    <script type="module" src="/auth.js"></script>
+  </body>
+</html>

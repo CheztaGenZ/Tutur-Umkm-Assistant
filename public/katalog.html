@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Katalog produk - Tutur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/auth.css" />
+    <link rel="stylesheet" href="/katalog.css" />
+  </head>
+  <body data-page="katalog">
+    <main class="auth-shell wide">
+      <div class="topline">
+        <a class="brand" href="/">
+          <span class="brand-mark">T</span>
+          <span>
+            <strong>Tutur</strong>
+            <small>Katalog produk</small>
+          </span>
+        </a>
+        <div class="account">
+          <span id="user-name">Memuat...</span>
+          <button class="btn btn-secondary small" type="button" id="logout">Keluar</button>
+        </div>
+      </div>
+
+      <section class="card">
+        <h1>Produk Anda</h1>
+        <p class="lede">
+          Isi nama, harga, dan keterangan. Setiap produk langsung dipakai Tutur untuk menjawab
+          pertanyaan pelanggan. Anda tidak perlu mengisi ulang besok.
+        </p>
+
+        <div class="alert" id="alert" hidden></div>
+
+        <form id="product-form">
+          <input type="hidden" id="product-id" value="" />
+
+          <div class="grid-two">
+            <div class="field">
+              <label for="name">Nama produk</label>
+              <input id="name" type="text" required maxlength="120" placeholder="Contoh: Nasi campur vegan" />
+            </div>
+            <div class="field">
+              <label for="price">Harga (Rupiah)</label>
+              <input id="price" type="number" min="0" step="500" required placeholder="35000" />
+              <span class="hint">Tulis angka saja. Contoh: 35000</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="category">Kategori</label>
+            <select id="category">
+              <option value="Makanan">Makanan</option>
+              <option value="Minuman">Minuman</option>
+              <option value="Paket">Paket</option>
+              <option value="Jasa">Jasa</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="description">Keterangan</label>
+            <textarea
+              id="description"
+              maxlength="500"
+              placeholder="Contoh: Tersedia setiap hari, bisa tidak pedas."
+            ></textarea>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" id="available" checked />
+            <span>Produk sedang tersedia</span>
+          </label>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" id="save">Simpan produk</button>
+            <button class="btn btn-secondary" type="button" id="cancel" hidden>Batal ubah</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="list-head">
+          <h2>Daftar produk</h2>
+          <span id="count" class="muted">0 produk</span>
+        </div>
+        <div id="products" class="product-list">
+          <p class="muted">Memuat produk...</p>
+        </div>
+      </section>
+
+      <p class="switch"><a href="/">Buka dashboard</a> · <a href="/playground">Coba playground</a></p>
+    </main>
+
+    <script type="module" src="/katalog.js"></script>
+  </body>
+</html>

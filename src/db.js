@@ -126,6 +126,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_ts ON ai_usage(ts);
 -- Sumber fakta bisnis untuk jawaban yang ter-grounding.
 CREATE TABLE IF NOT EXISTS knowledge (
   id         TEXT PRIMARY KEY,
+  owner_id   TEXT NOT NULL DEFAULT 'demo',
   category   TEXT NOT NULL,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL,
@@ -134,6 +135,40 @@ CREATE TABLE IF NOT EXISTS knowledge (
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_knowledge_active ON knowledge(active, category);
+
+-- Akun pemilik usaha.
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY,
+  email         TEXT UNIQUE,
+  name          TEXT NOT NULL,
+  password_hash TEXT,
+  google_id     TEXT UNIQUE,
+  facebook_id   TEXT UNIQUE,
+  avatar_url    TEXT,
+  created_at    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+-- Katalog produk milik satu akun.
+CREATE TABLE IF NOT EXISTS products (
+  id          TEXT PRIMARY KEY,
+  owner_id    TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  price       INTEGER NOT NULL DEFAULT 0,
+  description TEXT NOT NULL DEFAULT '',
+  category    TEXT NOT NULL DEFAULT 'Menu',
+  available   INTEGER NOT NULL DEFAULT 1,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_products_owner ON products(owner_id);
 
 -- Event playground anonim. Tidak menyimpan isi percakapan.
 CREATE TABLE IF NOT EXISTS playground_events (
@@ -171,8 +206,13 @@ export function openDb(dataDir) {
     db.exec('ALTER TABLE contacts ADD COLUMN memory TEXT');
   }
 
-  const statusCols = db.prepare('PRAGMA table_info(status_jobs)').all();
-  if (!statusCols.some((c) => c.name === 'wa_message_id')) {
+  const knowledgeCols = db.prepare('PRAGMA table_info(knowledge)').all();
+  if (!knowledgeCols.some((c) => c.name === 'owner_id')) {
+    db.exec("ALTER TABLE knowledge ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'demo'");
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_knowledge_owner ON knowledge(owner_id)');
+
+  const statusCols = db.prepare('PRAGMA table_info(status_jobs)').all();  if (!statusCols.some((c) => c.name === 'wa_message_id')) {
     db.exec('ALTER TABLE status_jobs ADD COLUMN wa_message_id TEXT');
   }
   if (!statusCols.some((c) => c.name === 'wa_status_jids')) {
@@ -730,6 +770,7 @@ const mapKnowledge = (row) =>
   row
     ? {
         id: row.id,
+        owner_id: row.owner_id,
         category: row.category,
         title: row.title,
         body: row.body,
@@ -739,27 +780,37 @@ const mapKnowledge = (row) =>
       }
     : null;
 
-export function listKnowledge(db, { activeOnly = false } = {}) {
-  const sql = activeOnly
-    ? 'SELECT * FROM knowledge WHERE active = 1 ORDER BY category, title'
-    : 'SELECT * FROM knowledge ORDER BY category, title';
-  return db.prepare(sql).all().map(mapKnowledge);
+export function listKnowledge(db, { activeOnly = false, ownerId = null } = {}) {
+  const where = [];
+  const params = [];
+  if (activeOnly) where.push('active = 1');
+  if (ownerId) {
+    where.push('owner_id = ?');
+    params.push(ownerId);
+  }
+  const sql = `SELECT * FROM knowledge${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
+    ORDER BY category, title`;
+  return db.prepare(sql).all(...params).map(mapKnowledge);
 }
 
 export function getKnowledge(db, id) {
   return mapKnowledge(db.prepare('SELECT * FROM knowledge WHERE id = ?').get(id));
 }
 
-export function upsertKnowledge(db, { id, category, title, body, keywords = '', active = 1 } = {}) {
+export function upsertKnowledge(
+  db,
+  { id, ownerId = 'demo', category, title, body, keywords = '', active = 1 } = {},
+) {
   const cleanTitle = String(title || '').trim();
   const cleanBody = String(body || '').trim();
   if (!cleanTitle) throw new Error('Judul knowledge wajib diisi');
   if (!cleanBody) throw new Error('Isi knowledge wajib diisi');
   const cleanId = id ? String(id) : knowledgeSlug(cleanTitle);
   db.prepare(
-    `INSERT INTO knowledge (id, category, title, body, keywords, active, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO knowledge (id, owner_id, category, title, body, keywords, active, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
+       owner_id = excluded.owner_id,
        category = excluded.category,
        title = excluded.title,
        body = excluded.body,
@@ -768,6 +819,7 @@ export function upsertKnowledge(db, { id, category, title, body, keywords = '', 
        updated_at = excluded.updated_at`,
   ).run(
     cleanId,
+    String(ownerId || 'demo'),
     String(category || 'umum').trim() || 'umum',
     cleanTitle,
     cleanBody,

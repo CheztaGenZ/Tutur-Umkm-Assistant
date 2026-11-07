@@ -13,6 +13,7 @@ Date: 2026-11-07
 | Database / storage | SQLite through the built-in `node:sqlite` module |
 | Hosting / deployment | Node web service with a persistent disk (see `docs/DEPLOY.md`) |
 | AI model / API | OpenAI-compatible chat completions. Default model `deepseek-chat` through `https://api.deepseek.com/v1`. The settings page also supports Gemini, OpenAI, OpenRouter, Groq, and Ollama |
+| Accounts | Email and password with scrypt hashing, plus optional Google and Facebook OAuth. Sessions use an HttpOnly cookie and a hashed token in SQLite |
 | Role of AI in the product | Reads the customer message, writes the reply in the owner's style, classifies intent, decides escalation, and grounds facts in the business knowledge base. AI is part of the main reply path, not a side feature |
 | Dataset / data source | No external dataset. Demo knowledge base and synthetic chat export were written for this submission. No real customer data is deployed |
 | Open-source libraries | `express`, `dotenv`, `@whiskeysockets/baileys`, `qrcode`, `pino`, `adm-zip`, `@ffmpeg-installer/ffmpeg`, `@huggingface/transformers`. See `package.json` for versions |

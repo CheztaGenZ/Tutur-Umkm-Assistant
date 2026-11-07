@@ -83,6 +83,14 @@ export const config = {
     businessName: process.env.BUSINESS_NAME || 'Sari Kitchen',
     adminToken: process.env.ADMIN_TOKEN || '',
   },
+
+  auth: {
+    publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+    googleId: process.env.GOOGLE_CLIENT_ID || '',
+    googleSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    facebookId: process.env.FACEBOOK_APP_ID || '',
+    facebookSecret: process.env.FACEBOOK_APP_SECRET || '',
+  },
 };
 
 /** Parse "01:00-07:00" jadi dua menit-dalam-hari. Null kalau format salah atau dimatikan. */export function parseQuietHours(spec) {

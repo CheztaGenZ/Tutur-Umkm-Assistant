@@ -41,6 +41,8 @@ Commit history before 2026-11-07 shows this state.
 - 20-question evaluation harness and results (`scripts/eval.mjs`, `evals/`).
 - Playground redesign and accessibility pass (`DESIGN.md`).
 - Submission documentation and deployment configuration.
+- Owner accounts with email, password, Google, and Facebook login.
+- Product catalog that syncs each product into the AI knowledge base.
 
 ## Commercial status
 
