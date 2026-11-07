@@ -30,10 +30,18 @@ async function post(pathname, body, cookie) {
   });
 }
 
+const noTerms = await post('/api/public/auth/register', {
+  name: 'Tanpa Setuju',
+  email: 'noterms@example.com',
+  password: 'rahasia123',
+});
+assert.equal(noTerms.status, 400);
+
 const register = await post('/api/public/auth/register', {
   name: 'Sari',
   email: 'sari@example.com',
   password: 'rahasia123',
+  acceptedTerms: true,
 });
 assert.equal(register.status, 200);
 const cookie = register.headers.getSetCookie()[0].split(';')[0];
@@ -60,6 +68,7 @@ const second = await post('/api/public/auth/register', {
   name: 'Wayan',
   email: 'wayan@example.com',
   password: 'rahasia456',
+  acceptedTerms: true,
 });
 const cookie2 = second.headers.getSetCookie()[0].split(';')[0];
 const list2 = await (await fetch(`${base}/api/products`, { headers: { cookie: cookie2 } })).json();

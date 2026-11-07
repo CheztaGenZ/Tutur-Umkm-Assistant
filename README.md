@@ -8,8 +8,8 @@ holds back when a human should decide.
 **Category:** Mahasiswa/Umum
 **Version:** v1.0-submission
 
-- Judge playground: `/playground` on the deployment URL
-- No login required for the playground
+- Coba Chat: `/coba` on the deployment URL
+- No login required for Coba Chat
 - Dashboard access uses an admin token provided to the judges
 
 ## Problem and target user
@@ -48,19 +48,19 @@ provider is not configured yet and email login still works. Setup steps are in
 3. **Knows when to stay quiet.** Booking, order, complaint, and allergy messages
    always become a draft for the owner. Spam is ignored. VIP numbers are never
    answered automatically.
-4. **Shows its reasoning.** The judge playground returns a decision trace:
+4. **Shows its reasoning.** The Coba Chat returns a decision trace:
    policy verdict, confidence, message intent, business sources, model, and
    response time.
 
-## Judge playground
+## Coba Chat
 
-Open `/playground`. Pick a customer role, send a message in Indonesian or
+Open `/coba`. Pick a customer role, send a message in Indonesian or
 English, and read the trace panel.
 
 Preset scenarios: price question, table booking, opening hours, an unknown fact,
 a complaint, and spam. Each one triggers a different policy outcome on purpose.
 
-The playground calls the same `generateReply` and `decide` functions that the
+Coba Chat calls the same `generateReply` and `decide` functions that the
 WhatsApp transport uses. The only difference is the entrance: HTTP instead of a
 WhatsApp socket. No mock data is hardcoded into the answer.
 
@@ -131,7 +131,7 @@ npm start
 ```
 
 Open `http://localhost:3000` for the dashboard and
-`http://localhost:3000/playground` for the judge demo.
+`http://localhost:3000/coba` for the judge demo.
 
 Demo mode:
 
@@ -140,7 +140,7 @@ DEMO_MODE=1 WA_DISABLED=1 ADMIN_TOKEN=change-me npm start
 ```
 
 `DEMO_MODE=1` seeds the Sari Kitchen demo, disables WhatsApp, uses the business
-prompt, and requires `ADMIN_TOKEN` for dashboard APIs. The playground stays
+prompt, and requires `ADMIN_TOKEN` for dashboard APIs. Coba Chat stays
 public and rate limited.
 
 ## Tests
@@ -159,7 +159,7 @@ an ephemeral filesystem.
 ## Known limitations
 
 - WhatsApp transport is disabled for judging to avoid account risk. The web
-  playground exercises the same AI and policy code.
+  Coba Chat exercises the same AI and policy code.
 - Accounts isolate the product catalog and business knowledge. Chat history and
   typing-style training still use one workspace in this MVP, so they are not yet
   separated per account.
@@ -168,7 +168,7 @@ an ephemeral filesystem.
 - SQLite suits a single-tenant deployment. Multi-tenant SaaS would need Postgres.
 - The evaluation set has 20 questions and uses keyword scoring. It is a signal,
   not a benchmark.
-- No real customer pilot yet. Impact numbers on the playground are labeled as
+- No real customer pilot yet. Impact numbers on Coba Chat are labeled as
   simulation plus live session data.
 
 ## Pre-existing work
@@ -181,6 +181,11 @@ show what existed before the competition and what was built for this submission.
 
 See [AI-TECHNOLOGY-DISCLOSURE.md](AI-TECHNOLOGY-DISCLOSURE.md) and
 [docs/LEGACY-README.md](docs/LEGACY-README.md) for the original project notes.
+
+Landing photo: "Nasi campur as art, Ubud, Indonesia" by Vyacheslav Argenberg,
+licensed CC BY 4.0, via Wikimedia Commons. Gallery photos: Gunawan Kartapranata
+(CC BY-SA 3.0), Crisco 1492 (CC BY-SA 3.0), mararie (CC BY-SA 2.0), via
+Wikimedia Commons.
 
 ## Team
 

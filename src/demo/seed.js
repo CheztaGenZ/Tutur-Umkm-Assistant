@@ -10,6 +10,7 @@ import { parseExport, buildPairs } from '../ingest/parseExport.js';
 import { analyzeStyle } from '../ingest/style.js';
 import { seedHistory } from '../ingest/seed.js';
 import { DEMO_PERSONAS } from './personas.js';
+import { createProduct, listProducts } from '../products.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EXPORT_PATH = path.join(__dirname, 'sari-kitchen.txt');
@@ -171,5 +172,33 @@ export function seedDemo({ db, meName = 'Sari' } = {}) {
     );
   }
 
-  return { contacts, knowledge, examples };
+  let demoProducts = 0;
+  if (!listProducts(db, 'demo').length) {
+    const items = [
+      {
+        name: 'Nasi campur vegan',
+        price: 35000,
+        category: 'Makanan',
+        description: 'Tersedia setiap hari, bisa tidak pedas.',
+      },
+      {
+        name: 'Sate lilit ayam',
+        price: 25000,
+        category: 'Makanan',
+        description: 'Lima tusuk, dibakar dengan bumbu khas Bali.',
+      },
+      {
+        name: 'Es kelapa muda',
+        price: 15000,
+        category: 'Minuman',
+        description: 'Kelapa muda segar, disajikan dingin.',
+      },
+    ];
+    for (const item of items) {
+      createProduct(db, { ownerId: 'demo', ...item });
+      demoProducts += 1;
+    }
+  }
+
+  return { contacts, knowledge, examples, products: demoProducts };
 }

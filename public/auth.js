@@ -66,6 +66,10 @@ form.addEventListener('submit', async (event) => {
     showAlert('Password minimal 8 karakter.');
     return;
   }
+  if (page === 'daftar' && !$('#terms')?.checked) {
+    showAlert('Centang dulu persetujuan Ketentuan Layanan dan Kebijakan Privasi.');
+    return;
+  }
 
   submit.disabled = true;
   submit.textContent = page === 'daftar' ? 'Membuat akun...' : 'Masuk...';
@@ -74,7 +78,9 @@ form.addEventListener('submit', async (event) => {
     const res = await fetch(`/api/public/auth/${page === 'daftar' ? 'register' : 'login'}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(page === 'daftar' ? { name, email, password } : { email, password }),
+      body: JSON.stringify(
+        page === 'daftar' ? { name, email, password, acceptedTerms: true } : { email, password },
+      ),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Tidak bisa masuk. Coba lagi.');

@@ -3,14 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/favicon-192-v2.png" />
     <title>Data bisnis - Tutur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/knowledge.css" />
+    <link rel="stylesheet" href="/photo-hero.css" />
+    <link rel="stylesheet" href="/reveal.css" />
   </head>
   <body>
     <header class="topbar">
@@ -22,22 +27,27 @@
         </span>
       </a>
       <nav class="links" aria-label="Navigasi">
-        <a href="/playground">Judge playground</a>
+        <a href="/coba">Coba Chat</a>
         <a href="/">Dashboard</a>
       </nav>
     </header>
 
     <main>
-      <section class="intro">
-        <h1>Data bisnis</h1>
-        <p>
-          Tutur hanya menjawab harga, jam, menu, dan kebijakan dari daftar ini. Kalau datanya tidak
-          ada, Tutur bilang akan cek ke pemilik. Tambahkan satu baris untuk setiap fakta yang boleh
-          dipakai.
-        </p>
+      <section class="page-hero" data-reveal>
+        <img src="/hero-food.jpg" width="1920" height="1080" alt="Nasi campur Bali" />
+        <div class="page-hero-scrim"></div>
+        <div class="page-hero-inner">
+          <div class="page-hero-copy">
+            <h1>Data bisnis</h1>
+            <p>
+              Tutur hanya menjawab harga, jam, menu, dan kebijakan dari daftar ini. Kalau datanya tidak
+              ada, Tutur bilang akan cek ke pemilik.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-reveal>
         <h2>Tambah data</h2>
         <form id="knowledge-form">
           <div class="row">
@@ -72,7 +82,7 @@
         </form>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-reveal>
         <div class="panel-head">
           <h2>Data tersimpan</h2>
           <span class="count" id="count">0 baris</span>
@@ -91,5 +101,6 @@
     </footer>
 
     <script type="module" src="/knowledge.js"></script>
+      <script type="module" src="/reveal.js"></script>
   </body>
 </html>

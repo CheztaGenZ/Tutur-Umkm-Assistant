@@ -11,6 +11,7 @@ const db = openDb(dir);
 const first = seedDemo({ db });
 assert.equal(first.knowledge >= 8, true);
 assert.equal(first.contacts, 4);
+assert.equal(first.products, 3);
 
 const tourist = getContact(db, 'demo-tourist@s.whatsapp.net');
 assert.equal(tourist.mode, 'auto');
@@ -22,8 +23,8 @@ assert.equal(getContact(db, 'demo-vip@s.whatsapp.net').mode, 'ignore');
 assert.equal(getContact(db, 'demo-unknown@s.whatsapp.net'), null);
 
 const second = seedDemo({ db });
-assert.deepEqual(second, { contacts: 0, knowledge: 0, examples: 0 });
-assert.equal(listKnowledge(db).length, first.knowledge);
+assert.deepEqual(second, { contacts: 0, knowledge: 0, examples: 0, products: 0 });
+assert.equal(listKnowledge(db).length, first.knowledge + first.products);
 
 db.close();
 fs.rmSync(dir, { recursive: true, force: true });

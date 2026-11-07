@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_id     TEXT UNIQUE,
   facebook_id   TEXT UNIQUE,
   avatar_url    TEXT,
+  terms_accepted_at INTEGER,
   created_at    INTEGER NOT NULL
 );
 
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS products (
   price       INTEGER NOT NULL DEFAULT 0,
   description TEXT NOT NULL DEFAULT '',
   category    TEXT NOT NULL DEFAULT 'Menu',
+  image_path  TEXT,
   available   INTEGER NOT NULL DEFAULT 1,
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
@@ -211,6 +213,16 @@ export function openDb(dataDir) {
     db.exec("ALTER TABLE knowledge ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'demo'");
   }
   db.exec('CREATE INDEX IF NOT EXISTS idx_knowledge_owner ON knowledge(owner_id)');
+
+  const userCols = db.prepare('PRAGMA table_info(users)').all();
+  if (!userCols.some((c) => c.name === 'terms_accepted_at')) {
+    db.exec('ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER');
+  }
+
+  const productCols = db.prepare('PRAGMA table_info(products)').all();
+  if (!productCols.some((c) => c.name === 'image_path')) {
+    db.exec('ALTER TABLE products ADD COLUMN image_path TEXT');
+  }
 
   const statusCols = db.prepare('PRAGMA table_info(status_jobs)').all();  if (!statusCols.some((c) => c.name === 'wa_message_id')) {
     db.exec('ALTER TABLE status_jobs ADD COLUMN wa_message_id TEXT');

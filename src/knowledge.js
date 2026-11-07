@@ -10,12 +10,44 @@ const STOPWORDS = new Set([
   'are', 'is', 'do', 'does', 'can', 'you', 'your', 'have', 'has', 'there', 'this',
 ]);
 
+const SYNONYMS = {
+  plant: ['vegan'],
+  plantbased: ['vegan'],
+  meatless: ['vegan'],
+  vegetarian: ['vegan'],
+  price: ['harga'],
+  cost: ['harga'],
+  open: ['buka'],
+  opens: ['buka'],
+  close: ['tutup'],
+  closes: ['tutup'],
+  hours: ['jam'],
+  time: ['jam'],
+  parking: ['parkir'],
+  address: ['alamat', 'lokasi'],
+  location: ['lokasi'],
+  book: ['reservasi', 'booking'],
+  booking: ['reservasi'],
+  drink: ['minuman'],
+  drinks: ['minuman'],
+  food: ['menu', 'makanan'],
+};
+
 export function tokenize(text) {
-  return String(text || '')
+  const normalized = String(text || '').replace(
+    /without meat|no meat|meatless|plant[\s-]?based/gi,
+    'vegan',
+  );
+  const base = normalized
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .map((t) => t.trim())
     .filter((t) => t.length >= 3 && !STOPWORDS.has(t));
+  const out = new Set(base);
+  for (const token of base) {
+    for (const extra of SYNONYMS[token] || []) out.add(extra);
+  }
+  return [...out];
 }
 
 /** @returns {Array} knowledge rows yang relevan, urut skor menurun. */

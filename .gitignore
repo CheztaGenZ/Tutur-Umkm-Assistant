@@ -18,3 +18,4 @@ stickers/*.jpeg
 stickers/catalog.json
 *.log
 test-suara.wav
+dist/

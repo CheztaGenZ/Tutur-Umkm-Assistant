@@ -3,15 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/favicon-192-v2.png" />
     <title>Katalog produk - Tutur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/auth.css" />
+    <link rel="stylesheet" href="/reveal.css" />
     <link rel="stylesheet" href="/katalog.css" />
+    <link rel="stylesheet" href="/photo-hero.css" />
   </head>
   <body data-page="katalog">
     <main class="auth-shell wide">
@@ -25,17 +30,37 @@
         </a>
         <div class="account">
           <span id="user-name">Memuat...</span>
+          <a class="btn btn-secondary small" href="/dashboard">Dashboard</a>
           <button class="btn btn-secondary small" type="button" id="logout">Keluar</button>
         </div>
       </div>
 
-      <section class="card">
-        <h1>Produk Anda</h1>
-        <p class="lede">
-          Isi nama, harga, dan keterangan. Setiap produk langsung dipakai Tutur untuk menjawab
-          pertanyaan pelanggan. Anda tidak perlu mengisi ulang besok.
-        </p>
+      <section class="page-hero" data-reveal>
+        <img src="/food-sate.jpg" width="1200" height="900" alt="Nasi campur dengan sate lilit" />
+        <div class="page-hero-scrim"></div>
+        <div class="page-hero-inner">
+          <div class="page-hero-copy">
+            <h1>Produk Anda</h1>
+            <p>
+              Isi nama, harga, dan keterangan. Setiap produk langsung dipakai Tutur untuk menjawab
+              pertanyaan pelanggan. Anda tidak perlu mengisi ulang besok.
+            </p>
+          </div>
+        </div>
+      </section>
 
+      <div class="quick-actions">
+        <div>
+          <h2>Langkah berikutnya</h2>
+          <p>Setelah produk disimpan, buka dashboard untuk membalas chat pelanggan, atau coba chat tanpa akun.</p>
+        </div>
+        <div class="quick-buttons">
+          <a class="btn btn-primary" href="/dashboard">Buka Dashboard Chat</a>
+          <a class="btn btn-secondary" href="/coba">Coba Chat</a>
+        </div>
+      </div>
+
+      <section class="card" data-reveal>
         <div class="alert" id="alert" hidden></div>
 
         <form id="product-form">
@@ -73,6 +98,16 @@
             ></textarea>
           </div>
 
+          <div class="field">
+            <label for="image">Foto produk</label>
+            <input id="image" type="file" accept="image/*" />
+            <div class="image-preview" id="preview" hidden>
+              <img id="preview-img" alt="Pratinjau foto produk" />
+              <button type="button" id="remove-image">Hapus foto</button>
+            </div>
+            <span class="hint">Opsional. Foto persegi terlihat paling rapi di HP.</span>
+          </div>
+
           <label class="check">
             <input type="checkbox" id="available" checked />
             <span>Produk sedang tersedia</span>
@@ -85,7 +120,7 @@
         </form>
       </section>
 
-      <section class="card">
+      <section class="card" data-reveal>
         <div class="list-head">
           <h2>Daftar produk</h2>
           <span id="count" class="muted">0 produk</span>
@@ -95,9 +130,10 @@
         </div>
       </section>
 
-      <p class="switch"><a href="/">Buka dashboard</a> · <a href="/playground">Coba playground</a></p>
+      <p class="switch"><a href="/">Buka dashboard</a> · <a href="/coba">Coba Chat</a></p>
     </main>
 
     <script type="module" src="/katalog.js"></script>
+      <script type="module" src="/reveal.js"></script>
   </body>
 </html>

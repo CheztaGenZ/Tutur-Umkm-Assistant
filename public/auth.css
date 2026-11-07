@@ -24,7 +24,7 @@ body {
   min-height: 100vh;
   background: var(--ivory);
   color: var(--ink);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, sans-serif;
   font-size: 18px;
   line-height: 1.65;
 }
@@ -54,6 +54,69 @@ label[for] {
   border-radius: 6px;
 }
 
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.auth-layout .auth-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.auth-photo {
+  position: relative;
+  overflow: hidden;
+  background: #2a211a;
+}
+
+.auth-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-photo-card {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  max-width: 380px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 248, 239, 0.24);
+  border-radius: 14px;
+  background: rgba(20, 14, 10, 0.4);
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  color: #fff8ef;
+}
+
+.auth-photo-card strong {
+  display: block;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.auth-photo-card span {
+  font-size: 15px;
+  color: rgba(255, 248, 239, 0.88);
+}
+
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .auth-photo {
+    display: none;
+  }
+}
+
 .auth-shell {
   max-width: 560px;
   margin: 0 auto;
@@ -77,13 +140,13 @@ label[for] {
   border-radius: 14px;
   background: var(--clay);
   color: #fff8ef;
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 30px;
 }
 
 .brand strong {
   display: block;
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 26px;
   line-height: 1.1;
 }
@@ -101,7 +164,7 @@ label[for] {
 }
 
 h1 {
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(30px, 5vw, 38px);
   line-height: 1.1;
   margin: 0 0 6px;
@@ -269,6 +332,38 @@ textarea:focus {
   border-color: #bcd8c7;
   background: #eaf4ee;
   color: var(--green);
+}
+
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 18px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.consent input {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--clay);
+}
+
+.consent a,
+.fine-print a {
+  color: var(--clay-dark);
+  font-weight: 600;
+}
+
+.fine-print {
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .switch {

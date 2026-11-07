@@ -10,6 +10,8 @@ import {
   createSession,
   getSessionUser,
   deleteSession,
+  upsertOAuthUser,
+  acceptTerms,
 } from '../src/auth.js';
 
 const dir = path.resolve('data-authtest');
@@ -35,6 +37,16 @@ assert.throws(() => createUser(db, { email: 'sari@example.com', name: 'Lain', pa
 
 const found = findUserByEmail(db, 'SARI@example.com');
 assert.equal(found.id, user.id);
+assert.equal(user.terms_accepted, true);
+
+const oauth = upsertOAuthUser(db, {
+  provider: 'google',
+  providerId: 'g-123',
+  email: 'oauth@example.com',
+  name: 'OAuth User',
+});
+assert.equal(oauth.terms_accepted, false);
+assert.equal(acceptTerms(db, oauth.id).terms_accepted, true);
 
 const token = createSession(db, user.id, 60_000);
 assert.ok(token.length >= 32);

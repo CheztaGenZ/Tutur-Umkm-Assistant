@@ -107,7 +107,7 @@ async function refreshStatus() {
 
     const brandNumber = $('#brandNumber');
     if (brandNumber) {
-      const brandName = s.config.me || wa.me?.name || 'Chesta';
+      const brandName = s.config.me || wa.me?.name || 'Tutur';
       brandNumber.textContent = wa.me?.number
         ? `${brandName} · ${wa.me.number}`
         : `${brandName} · belum terhubung`;
@@ -128,7 +128,9 @@ async function refreshStatus() {
 
     const ai = $('#aiStatus');
     const visionModel = s.config.visionModel || '';
-    ai.textContent = s.aiReady ? `AI: ${shortModel(s.config.model)}` : 'AI belum siap';
+    ai.textContent = s.aiReady ? 'AI siap' : 'AI belum siap';
+    const meter = $('#aiMeter');
+    if (meter) meter.classList.toggle('off', !s.aiReady);
     ai.title = s.aiReady
       ? `Teks: ${s.config.model}${visionModel ? `\nGambar/video: ${visionModel}` : ''}`
       : 'Isi API key lewat menu Setting';
@@ -149,14 +151,32 @@ async function refreshStatus() {
     const usageTotal = Number(usage.totalTokens) || 0;
     const usageToday = Number(usage.todayTokens) || 0;
     const usageCalls = Number(usage.calls) || 0;
+    const byKind = Array.isArray(usage.byKind) ? usage.byKind : [];
+    const kindTokens = (kind) =>
+      byKind.filter((x) => x.kind === kind).reduce((sum, x) => sum + (Number(x.tokens) || 0), 0);
+    const replyTokens = kindTokens('reply');
+    const testTokens = kindTokens('test') + kindTokens('playground');
+    const replyCalls = byKind
+      .filter((x) => x.kind === 'reply')
+      .reduce((sum, x) => sum + (Number(x.calls) || 0), 0);
+    const otherTokens = Math.max(0, usageTotal - replyTokens - testTokens);
     const usageEl = $('#usageTotal');
     if (usageEl) {
-      usageEl.textContent = fmtCompact(usageTotal);
+      usageEl.textContent = fmtCompact(replyTokens);
       $('#usageToday').textContent = `${fmtCompact(usageToday)} hari ini`;
-      $('#usageCalls').textContent = `${fmtCompact(usageCalls)} panggilan`;
+      $('#usageCalls').textContent = `${fmtNum(replyCalls || usageCalls)} balasan`;
+      const breakdown = $('#usageBreakdown');
+      if (breakdown) {
+        breakdown.textContent =
+          testTokens || otherTokens
+            ? `Tes & Coba Chat ${fmtCompact(testTokens)} · Lain ${fmtCompact(otherTokens)}`
+            : 'Hanya balasan WhatsApp';
+      }
       const usageCard = $('#usageCard');
       if (usageCard) {
-        usageCard.title = `${fmtNum(usageTotal)} token total · ${fmtNum(usageToday)} hari ini`;
+        usageCard.title = `Balas WA: ${fmtNum(replyTokens)} token (${fmtNum(replyCalls)} panggilan)\nTes: ${fmtNum(
+          testTokens,
+        )} token\nLain: ${fmtNum(otherTokens)} token\nTotal semua: ${fmtNum(usageTotal)}`;
       }
     }
 
@@ -190,6 +210,30 @@ async function refreshStatus() {
       overlay.classList.remove('hidden');
     } else {
       overlay.classList.add('hidden');
+    }
+
+    const waTitle = $('#waPanelTitle');
+    if (waTitle) {
+      const sub = $('#waPanelSub');
+      const btn = $('#waConnectBtn');
+      if (wa.status === 'open') {
+        waTitle.textContent = 'WhatsApp tersambung';
+        sub.textContent = wa.me?.number
+          ? `Nomor ${wa.me.number}. Chat masuk akan muncul di antrean bawah.`
+          : 'Chat masuk akan muncul di antrean bawah.';
+        btn.textContent = 'Tersambung';
+        btn.disabled = true;
+      } else if (wa.status === 'qr' && wa.qr) {
+        waTitle.textContent = 'Scan QR untuk menyambungkan';
+        sub.textContent = 'Buka WhatsApp di HP, pilih Perangkat tertaut, lalu scan.';
+        btn.textContent = 'Tampilkan QR';
+        btn.disabled = false;
+      } else {
+        waTitle.textContent = 'WhatsApp belum tersambung';
+        sub.textContent = 'Hubungkan nomor usaha untuk menerima chat dan membuat draft di sini.';
+        btn.textContent = 'Hubungkan WhatsApp';
+        btn.disabled = false;
+      }
     }
   } catch (err) {
     console.error(err);
@@ -520,7 +564,7 @@ $('#contacts').addEventListener('click', async (e) => {
         method: 'POST',
         body: { count: 300 },
       });
-      toast('Permintaan dikirim — riwayat masuk beberapa detik lagi');
+      toast('Permintaan dikirim. Riwayat masuk beberapa detik lagi');
     } catch (err) {
       toast(err.message);
     } finally {
@@ -638,7 +682,7 @@ $('#saveActivityBtn').addEventListener('click', async () => {
     });
     $('#activityText').value = '';
     $('#activityImage').value = '';
-    toast('Aktivitas aktif — AI akan pakai ini');
+    toast('Aktivitas aktif. AI akan pakai ini');
     await refreshActivities();
   } catch (err) {
     toast(err.message);
@@ -942,7 +986,7 @@ function renderBatch() {
     .map((n) => {
       const files = batch.filter((r) => r.authors.some((a) => a.name === n)).length;
       const kamu = /^(anda|you|kamu)$/i.test(n) ? ' (kamu)' : '';
-      return `<option value="${esc(n)}">${esc(n)}${kamu} — muncul di ${files} file</option>`;
+      return `<option value="${esc(n)}">${esc(n)}${kamu}, muncul di ${files} file</option>`;
     })
     .join('');
   $('#meSelect').value = names.includes(prev) ? prev : detectMeName();
@@ -964,7 +1008,7 @@ function renderBatch() {
             <div class="name">${esc(row.name)}</div>
             <div class="sub">${row.total} pesan · kamu: ${esc(me)} · ${others.length} lawan bicara${
               others.length > 1
-                ? ' · <span style="color: var(--amber)">grup — dipakai latihan gaya, tidak dibalas</span>'
+                ? ' · <span style="color: var(--amber)">grup, dipakai latihan gaya, tidak dibalas</span>'
                 : ''
             }</div>
             ${row.status ? `<div class="hint" style="margin-top:6px">${esc(row.status)}</div>` : ''}
@@ -1097,7 +1141,7 @@ function showResult(results) {
       ${results
         .map(
           (r) =>
-            `<li><b>${esc(r.contact)}</b> — ${r.myMessages} pesanmu, ${r.pairs} pasangan chat</li>`,
+            `<li><b>${esc(r.contact)}</b>: ${r.myMessages} pesanmu, ${r.pairs} pasangan chat</li>`,
         )
         .join('')}
     </ul>
@@ -1201,7 +1245,7 @@ function handleEvent(ev) {
   else if (ev.type === 'draft')
     addLog('draft', ev.contact ? `draft untuk ${who} menunggu persetujuan` : 'draft baru menunggu persetujuan');
   else if (ev.type === 'skip')
-    addLog('skip', ev.reason ? `${who} — ${ev.reason}` : 'pesan dilewati');
+    addLog('skip', ev.reason ? `${who}: ${ev.reason}` : 'pesan dilewati');
   else if (ev.type === 'error') addLog('error', ev.message || 'Terjadi error');
   else if (ev.type === 'ingest')
     addLog('ingest', ev.contact ? `profil ${who} diperbarui (${ev.samples} pesan)` : 'profil kontak diperbarui');
@@ -1709,18 +1753,38 @@ $('#logoutBtn').addEventListener('click', async () => {
     return;
   try {
     await api('/api/wa/logout', { method: 'POST' });
-    toast('Sesi diputus — scan QR baru');
+    toast('Sesi diputus. Scan QR baru');
     await refreshStatus();
   } catch (err) {
     toast(err.message);
   }
 });
 
-$('#pauseBtn').addEventListener('click', async () => {
-  const paused = !state.status?.paused;
+$('#waConnectBtn')?.addEventListener('click', async () => {
+  const wa = state.status?.wa;
+  if (wa?.status === 'qr' && wa.qr) {
+    $('#qrImg').src = wa.qr;
+    $('#qrOverlay').classList.remove('hidden');
+    return;
+  }
+  const btn = $('#waConnectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Menghubungkan...';
+  try {
+    await api('/api/wa/connect', { method: 'POST' });
+    toast('Menunggu koneksi WhatsApp. QR akan muncul sebentar lagi.');
+    await refreshStatus();
+  } catch (err) {
+    toast(err.message);
+    btn.disabled = false;
+    btn.textContent = 'Hubungkan WhatsApp';
+  }
+});
+
+$('#pauseBtn').addEventListener('click', async () => {  const paused = !state.status?.paused;
   try {
     await api('/api/pause', { method: 'POST', body: { paused } });
-    toast(paused ? 'Sistem dijeda — tidak ada balasan otomatis' : 'Sistem aktif lagi');
+    toast(paused ? 'Sistem dijeda. Tidak ada balasan otomatis' : 'Sistem aktif lagi');
     await refreshStatus();
   } catch (err) {
     toast(err.message);
@@ -1729,10 +1793,49 @@ $('#pauseBtn').addEventListener('click', async () => {
 
 $('#closeQr').addEventListener('click', () => $('#qrOverlay').classList.add('hidden'));
 
+/* ------------------------------- katalog -------------------------------- */
+
+const PRODUCT_THUMB = {
+  Makanan: '/logo-tutur.png',
+  Minuman: '/logo-tutur.png',
+  Paket: '/logo-tutur.png',
+  Jasa: '/logo-tutur.png',
+  Lainnya: '/logo-tutur.png',
+};
+
+async function refreshProducts() {
+  const box = $('#dashCatalogList');
+  if (!box) return;
+  try {
+    const data = await api('/api/products');
+    const items = data.products || [];
+    if (!items.length) {
+      box.innerHTML =
+        '<p class="muted">Belum ada produk. <a href="/katalog">Tambahkan produk pertama</a> supaya Tutur bisa menjawab harga.</p>';
+      return;
+    }
+    box.innerHTML = items
+      .map(
+        (item) => `
+        <div class="dash-product">
+          <img class="${item.image_url ? '' : 'fallback'}" src="${esc(item.image_url || PRODUCT_THUMB[item.category] || '/logo-tutur.png')}" width="54" height="54" alt="" loading="lazy" />
+          <div>
+            <strong>${esc(item.name)}</strong>
+            <span>Rp${new Intl.NumberFormat('id-ID').format(Number(item.price) || 0)}</span>
+          </div>
+        </div>`,
+      )
+      .join('');
+  } catch (err) {
+    box.innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+  }
+}
+
 /* --------------------------------- boot ---------------------------------- */
 
 refreshStatus();
 refreshDrafts();
+refreshProducts();
 connectSSE();
 addLog('wa', 'dashboard dimuat, menunggu event…');
 setInterval(() => {

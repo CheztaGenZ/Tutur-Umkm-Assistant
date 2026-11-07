@@ -18,7 +18,7 @@ body {
   margin: 0;
   background: var(--ivory);
   color: var(--ink);
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Figtree', system-ui, sans-serif;
   line-height: 1.55;
 }
 
@@ -67,13 +67,13 @@ a {
   border-radius: 10px;
   background: var(--clay);
   color: #fff8ef;
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 22px;
 }
 
 .brand strong {
   display: block;
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 20px;
   line-height: 1.1;
 }
@@ -111,7 +111,7 @@ main {
 }
 
 .intro h1 {
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(28px, 4vw, 40px);
   line-height: 1.05;
   margin: 0 0 8px;
@@ -132,7 +132,7 @@ main {
 }
 
 .panel h2 {
-  font-family: Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 19px;
   margin: 0 0 12px;
 }

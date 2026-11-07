@@ -98,13 +98,37 @@ export function detectRiskyIntent(message) {
   return null;
 }
 
+const ABSENCE_RE =
+  /\b(tidak ada|ga ada|gak ada|nggak ada|enggak ada|belum ada|belum punya|belum bisa|tidak tersedia|tidak punya|bukan|habis|not available|don't have|do not have|we don't|no such)\b/i;
+const DEFER_RE = /\b(cek dulu|cek ke pemilik|tanya pemilik|tanyakan ke pemilik|konfirmasi|hubungi pemilik)\b/i;
+
+const ID_WORDS =
+  /\b(kak|ada|tidak|nggak|gak|buka|tutup|enak|kita|aja|saja|bisa|harga|jam|dan|yang|untuk|dengan|nya|mau|pesan|meja|banyak|juga|sudah|belum)\b/i;
+const EN_WORDS =
+  /\b(the|we|have|yes|no|open|close|price|cost|available|is|are|our|you|your|food|table|today|tomorrow|vegan|pool|room|menu)\b/i;
+
+function looksIndonesian(text) {
+  return ID_WORDS.test(String(text || ''));
+}
+  /\b(tidak ada|ga ada|gak ada|nggak ada|belum ada|belum punya|tidak tersedia|tidak punya|habis|not available|don't have|do not have|we don't|no such)\b/i;
+
 /** Aturan keselamatan yang tidak boleh bergantung pada kepatuhan model. */
-export function applyIntentGuards({ intent, needsOwner, reply }) {
+export function applyIntentGuards({ intent, needsOwner, reply, sources = null }) {
   const safeIntent = normalizeIntent(intent);
+  const risky = RISKY_INTENTS.has(safeIntent);
+  const noSource = Array.isArray(sources) && safeIntent === 'tanya_fakta' && sources.length === 0;
+  const absence = typeof reply === 'string' && ABSENCE_RE.test(reply);
+  const deferred = typeof reply === 'string' && DEFER_RE.test(reply);
+  const needsHuman = needsOwner === true || risky || noSource || absence || deferred;
+  let ownerReason = '';
+  if (noSource) ownerReason = 'Tidak ada sumber data bisnis yang dikutip untuk jawaban ini.';
+  else if (absence) ownerReason = 'Balasan mengklaim sesuatu tidak tersedia. Pemilik perlu memastikan.';
+  else if (deferred) ownerReason = 'Balasan berjanji mengecek ke pemilik. Pastikan sebelum dikirim.';
   return {
     intent: safeIntent,
-    needsOwner: needsOwner === true || RISKY_INTENTS.has(safeIntent),
+    needsOwner: needsHuman,
     reply: safeIntent === 'spam' ? null : reply,
+    ownerReason,
   };
 }
 
@@ -145,8 +169,15 @@ function buildBusinessPrompt({
   maxBubbles = 3,
   memory = null,
   activity = null,
+  language = 'auto',
 }) {
   const kbBlock = knowledgeSection(knowledge);
+  const languageBlock =
+    language === 'en'
+      ? `\n## BAHASA: ENGLISH (WAJIB)\nBalas HANYA dalam bahasa Inggris. Jangan mencampur bahasa Indonesia, walaupun data bisnis atau contoh chat memakai bahasa Indonesia.`
+      : language === 'id'
+        ? `\n## BAHASA: INDONESIA (WAJIB)\nBalas HANYA dalam bahasa Indonesia santai. Jangan membalas dalam bahasa Inggris walaupun pelanggan memakai bahasa Inggris.`
+        : `\n## BAHASA\nIkuti bahasa pesan terakhir pelanggan. Kalau dia menulis bahasa Inggris, balas bahasa Inggris. Kalau Indonesia, balas Indonesia.`;
   const activityBlock = activity?.text
     ? `\n## INFO HARI INI\n${activity.text}\n`
     : '';
@@ -154,13 +185,18 @@ function buildBusinessPrompt({
 
 ## ATURAN MUTLAK
 1. Balas sebagai ${meName}, bukan sebagai asisten. JANGAN pernah mengaku AI.
-2. Ikuti bahasa pelanggan: Indonesia atau Inggris. Santai, ramah, dan pendek (maksimal ${maxBubbles} baris, tiap baris maksimal 12 kata).
+2. Ikuti bahasa pelanggan: Indonesia atau Inggris. Santai, ramah, dan pendek (maksimal ${maxBubbles} baris, tiap baris maksimal 12 kata). Variasikan pembuka. Jangan mulai dengan sapaan di setiap balasan.
 3. Fakta (harga, menu, jam, lokasi, kebijakan) HANYA dari SUMBER DATA BISNIS. JANGAN mengarang angka, jam, atau alamat.
 4. Kalau faktanya tidak ada di sumber, jangan menebak. Bilang akan cek ke pemilik, confidence <= 0.4, needs_owner true.
 5. Pesanan, booking, reservasi, komplain, alergi, permintaan khusus, atau urusan uang: WAJIB set needs_owner true, walaupun kamu tidak bisa menjawab atau balasanmu kosong. Jangan pernah mengonfirmasi ketersediaan, harga final, atau kompensasi.
 6. Spam, promosi, tautan mencurigakan, atau pesan yang tidak relevan dengan warung: reply null dan intent WAJIB "spam".
 7. Jangan menjanjikan hal yang tidak ada di sumber (diskon, ketersediaan meja, kompensasi, antar gratis).
 8. Sapaan hangat boleh, tapi jangan bertele-tele dan jangan menawarkan banyak hal sekaligus.
+9. Jawab inti pesan di kalimat pertama. Jangan mengulang pertanyaan pelanggan, jangan menjelaskan maksudnya, jangan merangkum.
+10. DILARANG memakai frasa: "Ada yang bisa saya bantu", "Tentu", "Dengan senang hati", "Sebagai AI", "Saya adalah asisten", "Saya harap ini membantu", "Jangan ragu", "Mohon maaf atas ketidaknyamanan", "Terima kasih telah menghubungi", "Baik, saya mengerti", "Semoga membantu". DILARANG membuka dengan "Halo" atau "Hai" di setiap balasan.
+11. Jangan memakai bullet, penomoran, tanda seru berlebihan, atau emoji kecuali gaya ngetik pemilik memang memakainya.
+12. Berhenti setelah informasi atau pertanyaan yang perlu. Jangan menambah tawaran, ringkasan, atau kalimat penutup basa-basi.
+${languageBlock}
 
 ## GAYA NGETIK ${meName.toUpperCase()}
 ${styleBlock(style)}
@@ -195,7 +231,7 @@ export function buildSystemPrompt({
   activity = null,
   knowledge = [],
 }) {
-  if (config.demo.enabled) {
+  if (config.demo.enabled || process.env.BUSINESS_MODE === '1') {
     return buildBusinessPrompt({
       meName,
       contactName,
@@ -206,6 +242,7 @@ export function buildSystemPrompt({
       maxBubbles,
       memory,
       activity,
+      language,
     });
   }
   const profile = loadProfile();
@@ -419,6 +456,7 @@ export async function generateReply({
   extraHint = null,
   activity = null,
   knowledge = [],
+  usageKind = 'reply',
 }) {
   const system = buildSystemPrompt({
     meName,
@@ -442,6 +480,12 @@ export async function generateReply({
   if (strictShort) {
     hints.push('PENTING: tulis MAKSIMAL 6 KATA, satu ide saja, tanpa penjelasan tambahan.');
   }
+  if ((config.demo.enabled || process.env.BUSINESS_MODE === '1') && language === 'en') {
+    hints.push('PENTING: balas HANYA dalam bahasa Inggris, walaupun data atau contoh memakai bahasa Indonesia.');
+  }
+  if ((config.demo.enabled || process.env.BUSINESS_MODE === '1') && language === 'id') {
+    hints.push('PENTING: balas HANYA dalam bahasa Indonesia.');
+  }
   if (extraHint) hints.push(extraHint);
   const finalUser = hints.length ? `${userText}\n\n${hints.join(' ')}` : userText;
 
@@ -457,7 +501,7 @@ export async function generateReply({
       { role: 'system', content: system },
       { role: 'user', content: userContent },
     ],
-    { temperature: config.ai.temperature, kind: 'reply' },
+    { temperature: config.ai.temperature, kind: usageKind },
   );
 
   const reply = typeof out.reply === 'string' ? out.reply.trim() : null;
@@ -490,7 +534,7 @@ export async function generateReply({
           { role: 'system', content: system },
           { role: 'user', content: retryContent },
         ],
-        { temperature: config.ai.temperature, kind: 'reply' },
+        { temperature: config.ai.temperature, kind: usageKind },
       );
       const r2 = clean(out2.reply);
       if (r2) {
@@ -503,10 +547,43 @@ export async function generateReply({
     }
   }
 
+  let forceOwner = false;
+  const businessMode = config.demo.enabled || process.env.BUSINESS_MODE === '1';
+  if (businessMode && language === 'en' && finalReply && looksIndonesian(finalReply)) {
+    try {
+      const translated = await chatJson(
+        [
+          {
+            role: 'system',
+            content:
+              'Terjemahkan balasan WhatsApp berikut ke bahasa Inggris yang natural dan singkat. Pertahankan harga, angka, dan fakta. Jangan terjemahkan "kak" secara literal; pakai "sorry" atau hilangkan. Jangan memakai em dash. Balas HANYA JSON: {"reply":"..."}',
+          },
+          { role: 'user', content: finalReply },
+        ],
+        { temperature: 0.2, kind: usageKind },
+      );
+      const r = typeof translated.reply === 'string' ? translated.reply.trim() : '';
+      if (r && !looksIndonesian(r)) {
+        finalReply = r;
+      } else {
+        forceOwner = true;
+      }
+    } catch {
+      forceOwner = true;
+    }
+  }
+
+  const knowledgeIds = new Set((knowledge || []).map((k) => k.id));
+  if (businessMode && finalReply) {
+    finalReply = finalReply.replace(/\s*[—–]\s*/g, ', ').replace(/\s+,/g, ',').trim();
+  }
+  const validSources = normalizeSources(out.used_sources).filter((id) => knowledgeIds.has(id));
+
   const guarded = applyIntentGuards({
     intent: out.intent,
-    needsOwner: out.needs_owner === true,
+    needsOwner: out.needs_owner === true || forceOwner,
     reply: finalReply,
+    sources: validSources,
   });
 
   // Jaring pengaman: pesan booking/komplain tidak boleh lolos sebagai auto
@@ -517,6 +594,7 @@ export async function generateReply({
     intent: finalIntent,
     needsOwner: guarded.needsOwner || Boolean(detected),
     reply: guarded.reply,
+    sources: validSources,
   });
 
   return {
@@ -527,8 +605,8 @@ export async function generateReply({
     reason: finalReason,
     intent: finalGuarded.intent,
     needsOwner: finalGuarded.needsOwner,
-    ownerReason: String(out.owner_reason || '').slice(0, 200),
-    knowledgeUsed: normalizeSources(out.used_sources),
+    ownerReason: finalGuarded.ownerReason || String(out.owner_reason || '').slice(0, 200),
+    knowledgeUsed: validSources,
   };
 }
 

@@ -1,0 +1,90 @@
+/* Reveal saat scroll. Tanpa JS, konten tetap terlihat. */
+[data-reveal] {
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal].will-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(8px);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+[data-reveal-delay="1"] {
+  transition-delay: 0.08s;
+}
+[data-reveal-delay="2"] {
+  transition-delay: 0.16s;
+}
+[data-reveal-delay="3"] {
+  transition-delay: 0.24s;
+}
+
+/* Hero: kata muncul satu per satu. */
+.word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.5em) rotate(1.5deg);
+  filter: blur(7px);
+  animation: word-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes word-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+    filter: blur(0);
+  }
+}
+
+.hero-img {
+  animation: hero-settle 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hero-settle {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.product-shot img {
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.6s ease;
+}
+
+.product-shot:hover img {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(56, 38, 20, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal].will-reveal,
+  [data-reveal].is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .word {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  .hero-img {
+    animation: none !important;
+  }
+}

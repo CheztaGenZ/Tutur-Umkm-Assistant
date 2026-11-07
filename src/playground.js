@@ -111,6 +111,20 @@ export function createPlayground({
     if (!text) return { sessionId: null, reply: null, error: 'Pesan wajib diisi' };
     if (text.length > MAX_MESSAGE_CHARS)
       return { sessionId: sessionId || null, reply: null, error: `Pesan maksimal ${MAX_MESSAGE_CHARS} karakter` };
+    if (config.demo.enabled && config.demo.dailyLimit > 0) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const used = db
+        .prepare('SELECT COUNT(*) AS n FROM playground_events WHERE ts >= ?')
+        .get(start.getTime()).n;
+      if (Number(used) >= config.demo.dailyLimit) {
+        return {
+          sessionId: sessionId || null,
+          reply: null,
+          error: 'Kuota demo hari ini habis. Coba lagi besok atau jalankan sendiri.',
+        };
+      }
+    }
     if (rateLimited(ip))
       return { sessionId: sessionId || null, reply: null, error: 'Terlalu banyak pesan. Coba lagi beberapa menit lagi.' };
 
@@ -144,6 +158,7 @@ export function createPlayground({
         maxBubbles: contact.burst || 3,
         memory: contact.memory || null,
         knowledge,
+        usageKind: 'playground',
       });
 
       const decision = decide({

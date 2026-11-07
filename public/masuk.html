@@ -3,17 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/favicon-192-v2.png" />
     <title>Masuk - Tutur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/auth.css" />
+    <link rel="stylesheet" href="/reveal.css" />
   </head>
   <body data-page="masuk">
-    <main class="auth-shell">
+    <div class="auth-layout"><main class="auth-shell">
       <a class="brand" href="/">
         <span class="brand-mark">T</span>
         <span>
@@ -22,9 +26,9 @@
         </span>
       </a>
 
-      <section class="card">
+      <section class="card" data-reveal>
         <h1>Masuk</h1>
-        <p class="lede">Gunakan akun Anda agar menu, produk, dan data bisnis tersimpan.</p>
+        <p class="lede">Masuk supaya menu, produk, dan data bisnis tersimpan.</p>
 
         <div class="alert" id="alert" hidden></div>
 
@@ -52,6 +56,12 @@
           <button class="btn btn-primary" type="submit" id="submit">Masuk</button>
         </form>
 
+        <p class="fine-print">
+          Dengan masuk, kamu menyetujui
+          <a href="/terms.html">Ketentuan Layanan</a> dan
+          <a href="/privacy.html">Kebijakan Privasi</a>.
+        </p>
+
         <div class="divider">atau masuk dengan</div>
 
         <div class="stack">
@@ -73,10 +83,11 @@
         </div>
 
         <p class="switch">Belum punya akun? <a href="/daftar">Buat akun</a></p>
-        <p class="switch"><a href="/playground">Coba demo tanpa akun</a></p>
+        <p class="switch"><a href="/coba">Coba chat tanpa akun</a></p>
       </section>
-    </main>
+    </main><aside class="auth-photo"><img src="/food-sate.jpg" width="1200" height="900" alt="" /><div class="auth-photo-card"><strong>Tutur</strong><span>Chat pelanggan, dibalas seperti Anda.</span></div></aside></div>
 
     <script type="module" src="/auth.js"></script>
+      <script type="module" src="/reveal.js"></script>
   </body>
 </html>

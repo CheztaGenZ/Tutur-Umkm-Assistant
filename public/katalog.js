@@ -4,6 +4,50 @@ const $ = (sel) => document.querySelector(sel);
 const rupiah = (value) => `Rp${new Intl.NumberFormat('id-ID').format(Number(value) || 0)}`;
 
 let products = [];
+let pendingImage = null;
+let removeImage = false;
+let currentImage = null;
+
+function setPreview(url) {
+  const box = $('#preview');
+  const img = $('#preview-img');
+  if (url) {
+    img.src = url;
+    box.hidden = false;
+  } else {
+    img.removeAttribute('src');
+    box.hidden = true;
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImage(file) {
+  const dataUrl = await fileToDataUrl(file);
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+  const max = 900;
+  const side = Math.min(image.width, image.height);
+  const sx = (image.width - side) / 2;
+  const sy = (image.height - side) / 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = max;
+  canvas.height = max;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, sx, sy, side, side, 0, 0, max, max);
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
 
 function alertBox(text, kind = 'error') {
   const el = $('#alert');
@@ -36,6 +80,8 @@ async function api(path, opts = {}) {
   return data;
 }
 
+const FALLBACK_LOGO = '/logo-tutur.png';
+
 function render() {
   $('#count').textContent = `${products.length} produk`;
   const list = $('#products');
@@ -48,6 +94,7 @@ function render() {
     .map(
       (item) => `
       <article class="product">
+        <img class="thumb${item.image_url ? '' : ' fallback'}" src="${escapeHtml(item.image_url || FALLBACK_LOGO)}" width="96" height="96" alt="" loading="lazy" />
         <div>
           <h3>${escapeHtml(item.name)}</h3>
           <p class="price">${rupiah(item.price)}</p>
@@ -82,6 +129,11 @@ function resetForm() {
   $('#description').value = '';
   $('#category').value = 'Makanan';
   $('#available').checked = true;
+  $('#image').value = '';
+  pendingImage = null;
+  removeImage = false;
+  currentImage = null;
+  setPreview(null);
   $('#save').textContent = 'Simpan produk';
   $('#cancel').hidden = true;
 }
@@ -95,6 +147,11 @@ function startEdit(id) {
   $('#description').value = item.description || '';
   $('#category').value = item.category;
   $('#available').checked = Boolean(item.available);
+  $('#image').value = '';
+  pendingImage = null;
+  removeImage = false;
+  currentImage = item.image_url || null;
+  setPreview(currentImage);
   $('#save').textContent = 'Simpan perubahan';
   $('#cancel').hidden = false;
   $('#name').focus();
@@ -125,6 +182,8 @@ $('#product-form').addEventListener('submit', async (event) => {
     category: $('#category').value,
     available: $('#available').checked,
   };
+  if (pendingImage) payload.image = pendingImage;
+  if (removeImage && !pendingImage) payload.removeImage = true;
   if (!payload.name) return alertBox('Nama produk wajib diisi.');
   if (payload.price <= 0) return alertBox('Harga harus lebih dari 0.');
 
@@ -145,6 +204,25 @@ $('#product-form').addEventListener('submit', async (event) => {
 });
 
 $('#cancel').addEventListener('click', resetForm);
+
+$('#image').addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    pendingImage = await compressImage(file);
+    removeImage = false;
+    setPreview(pendingImage);
+  } catch {
+    alertBox('Foto tidak bisa dibaca. Coba file lain.');
+  }
+});
+
+$('#remove-image').addEventListener('click', () => {
+  pendingImage = null;
+  removeImage = true;
+  $('#image').value = '';
+  setPreview(null);
+});
 
 $('#logout').addEventListener('click', async () => {
   await fetch('/api/public/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });

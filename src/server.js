@@ -29,6 +29,7 @@ import {
   getSessionUser,
   deleteSession,
   upsertOAuthUser,
+  acceptTerms,
 } from './auth.js';
 import * as products from './products.js';
 import AdmZip from 'adm-zip';
@@ -96,7 +97,17 @@ const redactEventForLan = (event = {}) => {
 export function createServer({ db, wa, bus }) {
   const app = express();
   app.disable('x-powered-by');
-  if (config.demo.enabled) app.set('trust proxy', 1);
+  if (config.demo.enabled || String(config.auth.publicBaseUrl).startsWith('https://')) {
+    app.set('trust proxy', 1);
+  }
+
+  // Paksa HTTPS saat situs sudah punya domain publik.
+  app.use((req, res, next) => {
+    if (!String(config.auth.publicBaseUrl).startsWith('https://')) return next();
+    const proto = req.get('x-forwarded-proto') || req.protocol;
+    if (proto === 'https') return next();
+    return res.redirect(301, `https://${req.get('host')}${req.originalUrl}`);
+  });
 
   const allowedHosts = new Set(['localhost', '127.0.0.1', '::1']);
   try {
@@ -135,6 +146,9 @@ export function createServer({ db, wa, bus }) {
       'Content-Security-Policy':
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
     });
+    if (String(config.auth.publicBaseUrl).startsWith('https://')) {
+      res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
     next();
   });
 
@@ -148,7 +162,9 @@ export function createServer({ db, wa, bus }) {
     if (!config.demo.enabled) return false;
     const token = config.demo.adminToken;
     if (!token) return false;
-    return req.get('x-admin-token') === token || req.query?.token === token;
+    if (req.get('x-admin-token') === token) return true;
+    // Query token hanya untuk SSE, karena EventSource tidak bisa mengirim header.
+    return req.path.endsWith('/events') && req.query?.token === token;
   };
 
   const dashboardAllowed = (req) =>
@@ -162,6 +178,14 @@ export function createServer({ db, wa, bus }) {
     req.user = getSessionUser(db, req.sessionToken);
     next();
   });
+
+  app.use(
+    '/uploads',
+    express.static(path.join(path.resolve(config.dataDir), 'uploads'), {
+      maxAge: '7d',
+      fallthrough: true,
+    }),
+  );
 
   // ---------------------- public playground (tanpa login) ----------------------
   const publicHits = new Map();
@@ -242,10 +266,32 @@ export function createServer({ db, wa, bus }) {
 
   const publicUser = (user) =>
     user
-      ? { id: user.id, email: user.email, name: user.name, avatar: user.avatar_url || '' }
+      ? {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar_url || '',
+          termsAccepted: Boolean(user.terms_accepted),
+        }
       : null;
 
-  app.post('/api/public/auth/register', (req, res) => {
+  const authAttempts = new Map();
+  const authLimiter = (req, res, next) => {
+    const ip = String(req.ip || 'unknown');
+    const now = Date.now();
+    const hits = (authAttempts.get(ip) || []).filter((t) => now - t < 10 * 60 * 1000);
+    if (hits.length >= 10) {
+      return res.status(429).json({ error: 'Terlalu banyak percobaan. Coba lagi 10 menit lagi.' });
+    }
+    hits.push(now);
+    authAttempts.set(ip, hits);
+    next();
+  };
+
+  app.post('/api/public/auth/register', authLimiter, (req, res) => {
+    if (req.body?.acceptedTerms !== true) {
+      return res.status(400).json({ error: 'Setujui Ketentuan Layanan dan Kebijakan Privasi dulu.' });
+    }
     try {
       const user = createUser(db, {
         name: req.body?.name,
@@ -260,7 +306,7 @@ export function createServer({ db, wa, bus }) {
     }
   });
 
-  app.post('/api/public/auth/login', (req, res) => {
+  app.post('/api/public/auth/login', authLimiter, (req, res) => {
     const user = authenticate(db, req.body?.email, req.body?.password);
     if (!user) return res.status(401).json({ error: 'Email atau password tidak cocok.' });
     const token = createSession(db, user.id);
@@ -277,6 +323,12 @@ export function createServer({ db, wa, bus }) {
   app.get('/api/public/auth/me', (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ user: publicUser(req.user) });
+  });
+
+  app.post('/api/public/auth/accept-terms', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    const user = acceptTerms(db, req.user.id);
+    res.json({ user: publicUser(user) });
   });
 
   const startOAuth = (provider) => (req, res) => {
@@ -376,7 +428,7 @@ export function createServer({ db, wa, bus }) {
       const token = createSession(db, user.id);
       sessionCookie(req, res, token);
       res.append('Set-Cookie', serializeCookie('oauth_state', '', { maxAge: 0 }));
-      res.redirect('/katalog');
+      res.redirect(user.terms_accepted ? '/katalog' : '/persetujuan');
     } catch (err) {
       res.redirect(`/masuk?error=${provider}_gagal`);
     }
@@ -385,7 +437,7 @@ export function createServer({ db, wa, bus }) {
   app.get('/auth/google/callback', finishOAuth('google'));
   app.get('/auth/facebook/callback', finishOAuth('facebook'));
 
-  app.use(['/api/products', '/api/knowledge'], express.json({ limit: '1mb' }));
+  app.use(['/api/products', '/api/knowledge'], express.json({ limit: '8mb' }));
 
   /* -------------------------------- katalog -------------------------------- */
 
@@ -472,10 +524,21 @@ export function createServer({ db, wa, bus }) {
     return jsonParser(req, res, next);
   });
 
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(publicDir, 'landing.html'));
+  });
+
   app.use(express.static(publicDir, { dotfiles: 'deny' }));
 
-  app.get('/playground', (req, res) => {
+  app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+
+  app.get('/coba', (req, res) => {
     res.sendFile(path.join(publicDir, 'playground.html'));
+  });
+  app.get('/playground', (req, res) => {
+    res.redirect(302, '/coba');
   });
   app.get('/masuk', (req, res) => {
     res.sendFile(path.join(publicDir, 'masuk.html'));
@@ -485,6 +548,9 @@ export function createServer({ db, wa, bus }) {
   });
   app.get('/katalog', (req, res) => {
     res.sendFile(path.join(publicDir, 'katalog.html'));
+  });
+  app.get('/persetujuan', (req, res) => {
+    res.sendFile(path.join(publicDir, 'persetujuan.html'));
   });
   app.get('/playground.css', (req, res) => {
     res.type('text/css').sendFile(path.join(publicDir, 'playground.css'));
@@ -550,7 +616,7 @@ export function createServer({ db, wa, bus }) {
         quietHours: config.safety.quietHours,
         autoConfidenceMin: config.safety.autoConfidenceMin,
       },
-      usage: store.aiUsageTotals(db),
+      usage: store.aiUsageSummary(db),
       privacy: wa.statusPrivacy
         ? {
             mode: wa.statusPrivacy.mode ?? null,
@@ -625,6 +691,15 @@ export function createServer({ db, wa, bus }) {
   });
 
   // Putuskan sesi WhatsApp lalu mulai bersih (QR baru).
+  app.post('/api/wa/connect', async (req, res) => {
+    try {
+      await wa.start();
+      res.json({ ok: true, wa: wa.snapshot() });
+    } catch (err) {
+      res.status(500).json({ error: `Tidak bisa memulai WhatsApp: ${err.message}` });
+    }
+  });
+
   app.post('/api/wa/logout', async (req, res) => {
     try {
       await wa.restartFresh();
@@ -996,6 +1071,7 @@ export function createServer({ db, wa, bus }) {
         maxBubbles: contact.burst || 3,
         memory: contact.memory,
         activity,
+        usageKind: 'test',
       });
 
       const lastOut = db

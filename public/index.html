@@ -3,15 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/favicon-192-v2.png" />
     <title>Tutur</title>
     <script src="/theme-init.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/theme-tutur.css" />
   </head>
   <body>
     <div class="app">
@@ -31,7 +35,7 @@
           </svg>
           <div class="brand-text">
             <strong>Tutur</strong>
-            <span id="brandNumber">Chesta · menghubungkan…</span>
+            <span id="brandNumber">Tutur · menghubungkan…</span>
           </div>
         </div>
 
@@ -69,9 +73,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
             <span>Setting</span>
           </button>
-          <a class="tab tab-link" href="/playground">
+          <a class="tab tab-link" href="/coba">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5zM8.5 9h7M8.5 12.5h7M8.5 16h4" /></svg>
-            <span>Judge Playground</span>
+            <span>Coba Chat</span>
           </a>
           <a class="tab tab-link" href="/knowledge.html">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h9l5 5v10H5zM14 4.5v5h5" /><path d="M8.5 13h7M8.5 16.5h5" /></svg>
@@ -85,12 +89,13 @@
 
         <div class="sidebar-foot">
           <button class="usage-card" id="usageCard" type="button" aria-label="Buka setting token AI" title="Buka setting token AI">
-            <span class="usage-label">Token AI</span>
+            <span class="usage-label" id="usageLabel">Token balas WA</span>
             <span class="usage-value"><span id="usageTotal">0</span> <span class="usage-unit">token</span></span>
             <span class="usage-meta">
               <span id="usageToday">0 hari ini</span>
-              <span id="usageCalls">0 panggilan</span>
+              <span id="usageCalls">0 balasan</span>
             </span>
+            <span class="usage-breakdown" id="usageBreakdown"></span>
           </button>
           <div class="conn-card">
             <div class="conn-line">
@@ -98,7 +103,10 @@
               <span class="conn-label" id="waStatus">menghubungkan…</span>
             </div>
             <div class="conn-meta">
-              <span id="aiStatus">AI…</span>
+              <span class="ai-status">
+                <span class="ai-meter" id="aiMeter" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span id="aiStatus">AI…</span>
+              </span>
               <span id="quota">0 / 200</span>
             </div>
           </div>
@@ -109,7 +117,7 @@
         <header class="topbar">
           <div class="topbar-left">
             <span class="scope">Ruang kerja</span>
-            <strong>Chesta</strong>
+            <strong>Tutur</strong>
           </div>
           <div class="topbar-right">
             <button class="btn ghost icon-btn" id="themeBtn" aria-label="Ganti tema terang atau gelap" title="Ganti tema">
@@ -154,6 +162,24 @@
               <div class="kpi">
                 <span class="kpi-label">Status terjadwal</span>
                 <span class="kpi-value"><span id="kpiStatus">0</span> <span class="kpi-unit">job</span></span>
+              </div>
+            </div>
+
+            <div class="wa-panel" id="waPanel">
+              <div>
+                <strong id="waPanelTitle">WhatsApp belum tersambung</strong>
+                <p id="waPanelSub">Hubungkan nomor usaha untuk menerima chat dan membuat draft di sini.</p>
+              </div>
+              <button class="btn primary" type="button" id="waConnectBtn">Hubungkan WhatsApp</button>
+            </div>
+
+            <div class="dash-catalog" id="dashCatalog">
+              <div class="dash-catalog-head">
+                <h2>Katalog produk Anda</h2>
+                <a href="/katalog">Kelola katalog</a>
+              </div>
+              <div class="dash-catalog-list" id="dashCatalogList">
+                <p class="muted">Memuat produk...</p>
               </div>
             </div>
 
@@ -250,7 +276,7 @@
                 <h2>Import chat</h2>
                 <span class="muted">Export WhatsApp → .zip atau .txt. Satu file satu kontak.</span>
               </div>
-              <label class="label">File export — bisa banyak sekaligus</label>
+              <label class="label">File export, bisa banyak sekaligus</label>
               <input type="file" id="fileInput" accept=".txt,.zip,text/plain,application/zip" class="input" multiple />
               <label class="label">Atau tempel satu chat</label>
               <textarea id="rawInput" class="input mono" rows="4" placeholder="12/03/24 14.22 - Budi: halo&#10;12/03/24 14.23 - Chesta: halo juga"></textarea>
@@ -312,6 +338,31 @@
 
           <!-- SETTINGS -->
           <section class="view" id="view-settings">
+            <details class="api-help">
+              <summary>Belum punya API key AI? Baca ini dulu</summary>
+              <div class="api-help-body">
+                <p>
+                  Tutur memakai satu API key milik pemilik usaha. Pengunjung tidak perlu memasukkan key
+                  sendiri. Tanpa key, chat tidak bisa dijawab.
+                </p>
+                <ol>
+                  <li>Pilih satu provider di tabel bawah.</li>
+                  <li>Buat key di situs provider, lalu salin.</li>
+                  <li>Tempel di form Provider AI, isi model, lalu klik Simpan.</li>
+                  <li>Klik Tes untuk memastikan key dan model bekerja.</li>
+                </ol>
+                <table>
+                  <tr><th>Provider</th><th>Alamat key</th><th>Base URL</th></tr>
+                  <tr><td>DeepSeek</td><td>platform.deepseek.com/api_keys</td><td>https://api.deepseek.com/v1</td></tr>
+                  <tr><td>Google Gemini</td><td>aistudio.google.com/apikey</td><td>https://generativelanguage.googleapis.com/v1beta/openai</td></tr>
+                  <tr><td>OpenRouter</td><td>openrouter.ai/keys</td><td>https://openrouter.ai/api/v1</td></tr>
+                  <tr><td>Groq</td><td>console.groq.com/keys</td><td>https://api.groq.com/openai/v1</td></tr>
+                  <tr><td>OpenAI</td><td>platform.openai.com/api-keys</td><td>https://api.openai.com/v1</td></tr>
+                </table>
+                <p class="muted">Key disimpan di server, tidak dikirim ke browser pengunjung.</p>
+              </div>
+            </details>
+
             <div class="settings-layout">
               <section class="card settings-card">
                 <div class="panel-head">

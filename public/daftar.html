@@ -3,17 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/favicon-192-v2.png" />
     <title>Buat akun - Tutur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/auth.css" />
+    <link rel="stylesheet" href="/reveal.css" />
   </head>
   <body data-page="daftar">
-    <main class="auth-shell">
+    <div class="auth-layout"><main class="auth-shell">
       <a class="brand" href="/">
         <span class="brand-mark">T</span>
         <span>
@@ -22,9 +26,9 @@
         </span>
       </a>
 
-      <section class="card">
+      <section class="card" data-reveal>
         <h1>Buat akun</h1>
-        <p class="lede">Sekali daftar, menu dan data bisnis Anda tersimpan dan dipakai Tutur setiap hari.</p>
+        <p class="lede">Setelah daftar, menu dan data bisnis tersimpan. Tidak perlu diisi ulang.</p>
 
         <div class="alert" id="alert" hidden></div>
 
@@ -56,6 +60,15 @@
             <span class="hint">Gunakan minimal 8 karakter. Anda bisa memakai huruf, angka, atau simbol.</span>
           </div>
 
+          <label class="consent">
+            <input type="checkbox" id="terms" required />
+            <span>
+              Saya sudah membaca dan menyetujui
+              <a href="/terms.html" target="_blank" rel="noopener">Ketentuan Layanan</a> dan
+              <a href="/privacy.html" target="_blank" rel="noopener">Kebijakan Privasi</a>.
+            </span>
+          </label>
+
           <button class="btn btn-primary" type="submit" id="submit">Buat akun</button>
         </form>
 
@@ -81,8 +94,9 @@
 
         <p class="switch">Sudah punya akun? <a href="/masuk">Masuk</a></p>
       </section>
-    </main>
+    </main><aside class="auth-photo"><img src="/food-babi.jpg" width="1200" height="900" alt="" /><div class="auth-photo-card"><strong>Tutur</strong><span>Chat pelanggan, dibalas seperti Anda.</span></div></aside></div>
 
     <script type="module" src="/auth.js"></script>
+      <script type="module" src="/reveal.js"></script>
   </body>
 </html>

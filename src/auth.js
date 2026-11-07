@@ -18,6 +18,7 @@ const mapUser = (row) =>
         avatar_url: row.avatar_url,
         created_at: row.created_at,
         has_password: Boolean(row.password_hash),
+        terms_accepted: Boolean(row.terms_accepted_at),
       }
     : null;
 
@@ -59,8 +60,8 @@ export function createUser(db, { email, name, password }) {
 
   const id = `usr_${crypto.randomUUID()}`;
   db.prepare(
-    'INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)',
-  ).run(id, cleanEmail, cleanName, hashPassword(password), Date.now());
+    'INSERT INTO users (id, email, name, password_hash, terms_accepted_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+  ).run(id, cleanEmail, cleanName, hashPassword(password), Date.now(), Date.now());
   return findUserById(db, id);
 }
 
@@ -132,10 +133,14 @@ export function getSessionUser(db, token) {
   return findUserById(db, session.user_id);
 }
 
-export function deleteSession(db, token) {
-  if (!token) return false;
+export function deleteSession(db, token) {  if (!token) return false;
   const id = crypto.createHash('sha256').update(String(token)).digest('hex');
   return db.prepare('DELETE FROM sessions WHERE id = ?').run(id).changes > 0;
+}
+
+export function acceptTerms(db, userId) {
+  db.prepare('UPDATE users SET terms_accepted_at = ? WHERE id = ?').run(Date.now(), String(userId));
+  return findUserById(db, userId);
 }
 
 export function parseCookies(header) {

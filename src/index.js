@@ -116,7 +116,7 @@ setInterval(() => {
   });
 }, 30000);
 
-if (config.demo.enabled) {
+if (config.demo.enabled && process.env.WA_ENABLED !== '1') {
   console.log('  WhatsApp : dimatikan (DEMO_MODE=1)');
 } else if (process.env.WA_DISABLED === '1') {
   console.log('  WhatsApp : dimatikan (WA_DISABLED=1)');

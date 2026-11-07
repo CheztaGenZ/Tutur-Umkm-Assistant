@@ -55,6 +55,19 @@ const normal = applyIntentGuards({ intent: 'tanya_fakta', needsOwner: false, rep
 assert.equal(normal.needsOwner, false);
 assert.equal(normal.reply, '35k');
 
+const noSource = applyIntentGuards({ intent: 'tanya_fakta', needsOwner: false, reply: '35k', sources: [] });
+assert.equal(noSource.needsOwner, true);
+assert.match(noSource.ownerReason, /sumber/i);
+
+const absence = applyIntentGuards({
+  intent: 'tanya_fakta',
+  needsOwner: false,
+  reply: 'kami tidak ada kolam',
+  sources: [{ id: 'x' }],
+});
+assert.equal(absence.needsOwner, true);
+assert.match(absence.ownerReason, /pemilik/i);
+
 assert.equal(detectRiskyIntent('Can I book a table for 6 people?'), 'booking');
 assert.equal(detectRiskyIntent('Mau reservasi 12 orang besok'), 'booking');
 assert.equal(detectRiskyIntent('Kemarin pesanan saya telat satu jam'), 'komplain');

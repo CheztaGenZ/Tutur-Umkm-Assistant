@@ -65,7 +65,12 @@ export async function stickerPreview(buffer) {
   const os = await import('node:os');
   const path = await import('node:path');
   const require = createRequire(import.meta.url);
-  const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+  let ffmpegPath;
+  try {
+    ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+  } catch {
+    return null;
+  }
 
   // Lewat file sementara: decoding webp dari pipe tidak selalu berhasil.
   const tmp = path.join(os.tmpdir(), `wa-sticker-${Date.now()}-${Math.random().toString(36).slice(2)}.webp`);

@@ -20,7 +20,12 @@ export const transcribeReady = () => remoteReady() || config.ai.transcribeLocal;
 /** Ubah audio apa pun (ogg/opus/m4a) jadi PCM float32 16 kHz mono. */
 function toPcm(buffer) {
   return new Promise((resolve, reject) => {
-    const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+    let ffmpegPath;
+    try {
+      ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+    } catch {
+      return reject(new Error('ffmpeg tidak tersedia di server ini'));
+    }
     const proc = spawn(ffmpegPath, [
       '-hide_banner',
       '-loglevel',

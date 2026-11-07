@@ -34,6 +34,12 @@ assert.deepEqual(searchKnowledge(listKnowledge(db), 'apakah ada parkir bus besar
 const en = searchKnowledge(listKnowledge(db), 'what time do you close?');
 assert.equal(en[0].title, 'Jam buka');
 
+const plant = searchKnowledge(listKnowledge(db), 'do you have plant-based food?');
+assert.equal(plant[0].title, 'Nasi campur vegan');
+
+const meatless = searchKnowledge(listKnowledge(db), 'anything without meat?');
+assert.equal(meatless[0].title, 'Nasi campur vegan');
+
 assert.equal(deleteKnowledge(db, menu.id), true);
 assert.equal(listKnowledge(db).length, 1);
 

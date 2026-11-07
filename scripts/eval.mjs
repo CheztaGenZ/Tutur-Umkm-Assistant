@@ -99,7 +99,7 @@ async function mapLimit(items, limit, fn) {
 await mapLimit(questions, 3, async (q) => {
   const kb = searchKnowledge(rows, q.message, 3);
   const [baselineSettled, groundedSettled] = await Promise.allSettled([
-    runWithRetry(q, [], 'Jawab dari pengetahuan umummu jika memungkinkan, tanpa bertanya balik.'),
+    runWithRetry(q, [], null),
     runWithRetry(q, kb, null),
   ]);
 
@@ -178,7 +178,7 @@ const lines = [
   '',
   '## Catatan metode',
   '',
-  '- Baseline memakai prompt yang sama tanpa blok knowledge base, dengan instruksi menjawab dari pengetahuan umum.',
+  '- Baseline memakai prompt dan model yang sama, hanya tanpa blok knowledge base.',
   '- Mode Tutur memakai retrieval top-3 dari knowledge base Sari Kitchen.',
   '- "Harga mengarang" dihitung bila jawaban memuat angka ribuan pada pertanyaan yang datanya tidak tersedia.',
   '- Jawaban dinilai otomatis dengan aturan kata kunci; bukan penilaian manusia.',

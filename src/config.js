@@ -82,6 +82,7 @@ export const config = {
     enabled: process.env.DEMO_MODE === '1',
     businessName: process.env.BUSINESS_NAME || 'Sari Kitchen',
     adminToken: process.env.ADMIN_TOKEN || '',
+    dailyLimit: Number(process.env.DEMO_DAILY_LIMIT || 200),
   },
 
   auth: {
@@ -91,6 +92,9 @@ export const config = {
     facebookId: process.env.FACEBOOK_APP_ID || '',
     facebookSecret: process.env.FACEBOOK_APP_SECRET || '',
   },
+
+  // Akun pemilik yang dipakai jalur WhatsApp dan playground demo.
+  ownerId: process.env.OWNER_ID || 'demo',
 };
 
 /** Parse "01:00-07:00" jadi dua menit-dalam-hari. Null kalau format salah atau dimatikan. */export function parseQuietHours(spec) {

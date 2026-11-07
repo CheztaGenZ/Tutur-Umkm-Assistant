@@ -28,7 +28,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node scripts/selftest.mjs && node scripts/handler.test.mjs && node scripts/status.test.mjs && node scripts/settings.test.mjs && node scripts/security.test.mjs && node scripts/smoke.mjs && node scripts/knowledge.test.mjs && node scripts/prompt-grounding.test.mjs && node scripts/escalation.test.mjs && node scripts/playground.test.mjs && node scripts/public-api.test.mjs && node scripts/demo-seed.test.mjs && node scripts/ui-escape.test.mjs && node scripts/impact.test.mjs && node scripts/auth.test.mjs && node scripts/products.test.mjs && node scripts/auth-api.test.mjs",
+    "test": "node scripts/selftest.mjs && node scripts/handler.test.mjs && node scripts/status.test.mjs && node scripts/settings.test.mjs && node scripts/security.test.mjs && node scripts/smoke.mjs && node scripts/knowledge.test.mjs && node scripts/prompt-grounding.test.mjs && node scripts/escalation.test.mjs && node scripts/playground.test.mjs && node scripts/public-api.test.mjs && node scripts/demo-seed.test.mjs && node scripts/ui-escape.test.mjs && node scripts/impact.test.mjs && node scripts/auth.test.mjs && node scripts/products.test.mjs && node scripts/product-image.test.mjs && node scripts/auth-api.test.mjs",
     "test:knowledge": "node scripts/knowledge.test.mjs",
     "test:playground": "node scripts/playground.test.mjs",
     "test:public-api": "node scripts/public-api.test.mjs",
@@ -61,13 +61,15 @@
     "pick-sticker": "node scripts/pick-sticker.mjs"
   },
   "dependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@huggingface/transformers": "^4.3.2",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "adm-zip": "^0.6.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@huggingface/transformers": "^4.3.2"
   }
 }

@@ -118,5 +118,53 @@
     "type": "spam",
     "message": "Promo slot gacor, klik link di bio sekarang!",
     "expect": { "intent": "spam" }
+  },
+  {
+    "id": "q21",
+    "type": "fakta",
+    "message": "Do you have plant-based food? How much?",
+    "expect": { "mustInclude": ["35"] }
+  },
+  {
+    "id": "q22",
+    "type": "fakta",
+    "message": "Do you have anything without meat?",
+    "expect": { "mustIncludeAny": ["vegan", "35"] }
+  },
+  {
+    "id": "q23",
+    "type": "tidak_ada",
+    "message": "Do you have a pool?",
+    "expect": { "refuseAny": ["tidak", "belum", "cek", "nggak", "bisa", "bukan", "no ", "sorry"], "needsOwner": true }
+  },
+  {
+    "id": "q24",
+    "type": "fakta",
+    "message": "How late are you open?",
+    "expect": { "mustIncludeAny": ["21", "9 malam", "9 pm", "nine"] }
+  },
+  {
+    "id": "q25",
+    "type": "tidak_ada",
+    "message": "Do you have a baby chair?",
+    "expect": { "refuseAny": ["tidak", "belum", "cek", "nggak", "bisa", "bukan", "no ", "sorry"], "needsOwner": true }
+  },
+  {
+    "id": "q26",
+    "type": "fakta",
+    "message": "Is there parking for a big bus?",
+    "expect": { "mustIncludeAny": ["tidak", "bus"] }
+  },
+  {
+    "id": "q27",
+    "type": "tidak_ada",
+    "message": "Can I pay with bitcoin?",
+    "expect": { "refuseAny": ["tidak", "belum", "cek", "nggak", "bisa", "bukan", "no ", "sorry"], "needsOwner": true }
+  },
+  {
+    "id": "q28",
+    "type": "booking",
+    "message": "Mau booking meja untuk 10 orang besok malam.",
+    "expect": { "needsOwner": true }
   }
 ]
