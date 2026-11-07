@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { openDb } from '../src/db.js';
+import { openDb, upsertContact, setContactMode } from '../src/db.js';
 import { createPlayground } from '../src/playground.js';
 import { decide } from '../src/policy.js';
 
@@ -9,6 +9,8 @@ const dir = path.resolve('data-playgroundtest');
 fs.rmSync(dir, { recursive: true, force: true });
 const db = openDb(dir);
 const personaJid = 'demo-tourist@s.whatsapp.net';
+upsertContact(db, { jid: personaJid, number: '62811', name: 'Turis' });
+setContactMode(db, personaJid, 'auto');
 
 const pg = createPlayground({
   db,

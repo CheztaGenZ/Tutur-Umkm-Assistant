@@ -12,6 +12,14 @@ const state = {
   settingsFormOrigin: null,
 };
 
+const ADMIN_TOKEN =
+  new URLSearchParams(location.search).get('token') ||
+  sessionStorage.getItem('tutur_admin') ||
+  '';
+if (new URLSearchParams(location.search).get('token')) {
+  sessionStorage.setItem('tutur_admin', ADMIN_TOKEN);
+}
+
 async function api(path, opts = {}) {
   const method = String(opts.method || 'GET').toUpperCase();
   const hasBody = opts.body !== undefined && opts.body !== null;
@@ -21,7 +29,10 @@ async function api(path, opts = {}) {
       ? '{}'
       : undefined;
   const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(ADMIN_TOKEN ? { 'x-admin-token': ADMIN_TOKEN } : {}),
+    },
     ...opts,
     body,
   });
@@ -1218,7 +1229,7 @@ function handleEvent(ev) {
 }
 
 function connectSSE() {
-  const es = new EventSource('/api/events');
+  const es = new EventSource(`/api/events${ADMIN_TOKEN ? `?token=${encodeURIComponent(ADMIN_TOKEN)}` : ''}`);
   es.onmessage = (e) => {
     try {
       handleEvent(JSON.parse(e.data));

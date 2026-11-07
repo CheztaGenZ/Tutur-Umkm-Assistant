@@ -73,14 +73,35 @@ export function createPlayground({
 
   function metrics() {
     const totals = store.playgroundEventTotals(db);
+    let base = null;
+    try {
+      base = JSON.parse(store.kvGet(db, 'demo_baseline') || 'null');
+    } catch {
+      base = null;
+    }
+    const liveMessages = Number(totals.messages) || 0;
+    const liveAuto = Number(totals.auto) || 0;
+    const liveDraft = Number(totals.draft) || 0;
+    const liveIgnore = Number(totals.ignored) || 0;
+    const liveEscalated = Number(totals.escalated) || 0;
+
+    const messages = liveMessages + (Number(base?.messages) || 0);
+    const auto = liveAuto + (Number(base?.auto) || 0);
+    const escalated = liveEscalated + (Number(base?.escalated) || 0);
+
     return {
-      messages: Number(totals.messages) || 0,
-      auto: Number(totals.auto) || 0,
-      draft: Number(totals.draft) || 0,
-      ignore: Number(totals.ignored) || 0,
-      escalated: Number(totals.escalated) || 0,
+      messages,
+      auto,
+      draft: liveDraft,
+      ignore: liveIgnore,
+      escalated,
       avgLatencyMs: Math.round(Number(totals.avg_latency_ms) || 0),
       sessions: sessions.size,
+      liveMessages,
+      simulatedDays: Number(base?.days) || 0,
+      autoRate: messages ? Math.round((auto / messages) * 100) : 0,
+      ownerMinutesSaved: Math.round(auto * 1.5),
+      source: base ? 'simulated+live' : 'live',
     };
   }
 
@@ -104,7 +125,7 @@ export function createPlayground({
       store.getContact(db, personaJid) || {
         jid: personaJid,
         name: 'Pelanggan',
-        mode: 'auto',
+        mode: 'draft',
       };
 
     const started = now();
@@ -136,6 +157,7 @@ export function createPlayground({
         },
         needsOwner: result.needsOwner === true,
         ownerReason: result.ownerReason,
+        intent: result.intent,
       });
 
       const latencyMs = Math.max(0, now() - started);

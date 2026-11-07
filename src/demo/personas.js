@@ -64,7 +64,7 @@ export const DEMO_SCENARIOS = [
   {
     label: 'Fakta tidak ada di data',
     personaJid: 'demo-local@s.whatsapp.net',
-    message: 'Apakah ada parkir bus besar?',
+    message: 'Apakah ada kursi bayi dan bisa bayar pakai Bitcoin?',
   },
   {
     label: 'Komplain',

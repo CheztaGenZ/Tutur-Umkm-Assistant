@@ -133,7 +133,8 @@ export function createServer({ db, wa, bus }) {
   const adminAllowed = (req) => {
     if (!config.demo.enabled) return false;
     const token = config.demo.adminToken;
-    return Boolean(token) && req.get('x-admin-token') === token;
+    if (!token) return false;
+    return req.get('x-admin-token') === token || req.query?.token === token;
   };
 
   const playground = createPlayground({ db });
@@ -194,13 +195,8 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.get('/api/public/impact', (req, res) => {
-    const live = playground.metrics();
     res.set('Cache-Control', 'no-store');
-    res.json({
-      source: 'simulated+live',
-      simulatedDays: 30,
-      ...live,
-    });
+    res.json(playground.metrics());
   });
 
   app.use('/api', (req, res, next) => {
@@ -253,6 +249,13 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.use(express.static(publicDir, { dotfiles: 'deny' }));
+
+  app.get('/playground', (req, res) => {
+    res.sendFile(path.join(publicDir, 'playground.html'));
+  });
+  app.get('/playground.css', (req, res) => {
+    res.type('text/css').sendFile(path.join(publicDir, 'playground.css'));
+  });
 
   let eventClients = 0;
   const eventClientsByIp = new Map();
