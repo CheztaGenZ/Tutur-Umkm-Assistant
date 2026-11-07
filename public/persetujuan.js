@@ -32,7 +32,7 @@ $('#accept').addEventListener('click', async () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Gagal menyimpan persetujuan.');
-    location.replace('/katalog');
+    location.replace(data.user?.needsProfile ? '/profil-usaha' : '/katalog');
   } catch (err) {
     $('#status').textContent = err.message;
     button.disabled = false;

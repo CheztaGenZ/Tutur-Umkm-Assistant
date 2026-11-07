@@ -172,6 +172,19 @@ CREATE TABLE IF NOT EXISTS products (
 );
 CREATE INDEX IF NOT EXISTS idx_products_owner ON products(owner_id);
 
+-- Profil usaha per akun, dipakai sebagai knowledge dasar.
+CREATE TABLE IF NOT EXISTS business_profiles (
+  owner_id   TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  category   TEXT,
+  location   TEXT,
+  hours      TEXT,
+  specialty  TEXT,
+  contact    TEXT,
+  notes      TEXT,
+  updated_at INTEGER NOT NULL
+);
+
 -- Event playground anonim. Tidak menyimpan isi percakapan.
 CREATE TABLE IF NOT EXISTS playground_events (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -875,4 +888,52 @@ export function playgroundEventTotals(db) {
        FROM playground_events`,
     )
     .get();
+}
+
+/* ---------------------------- business profile ---------------------------- */
+
+export function getBusinessProfile(db, ownerId) {
+  const row = db.prepare('SELECT * FROM business_profiles WHERE owner_id = ?').get(String(ownerId));
+  return row
+    ? {
+        owner_id: row.owner_id,
+        name: row.name,
+        category: row.category || '',
+        location: row.location || '',
+        hours: row.hours || '',
+        specialty: row.specialty || '',
+        contact: row.contact || '',
+        notes: row.notes || '',
+        updated_at: row.updated_at,
+      }
+    : null;
+}
+
+export function upsertBusinessProfile(db, ownerId, data = {}) {
+  const name = String(data.name || '').trim();
+  if (!name) throw new Error('Nama usaha wajib diisi');
+  db.prepare(
+    `INSERT INTO business_profiles (owner_id, name, category, location, hours, specialty, contact, notes, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(owner_id) DO UPDATE SET
+       name = excluded.name,
+       category = excluded.category,
+       location = excluded.location,
+       hours = excluded.hours,
+       specialty = excluded.specialty,
+       contact = excluded.contact,
+       notes = excluded.notes,
+       updated_at = excluded.updated_at`,
+  ).run(
+    String(ownerId),
+    name,
+    String(data.category || '').trim(),
+    String(data.location || '').trim(),
+    String(data.hours || '').trim(),
+    String(data.specialty || '').trim(),
+    String(data.contact || '').trim(),
+    String(data.notes || '').trim(),
+    Date.now(),
+  );
+  return getBusinessProfile(db, ownerId);
 }

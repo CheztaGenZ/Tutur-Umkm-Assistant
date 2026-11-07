@@ -8,6 +8,7 @@ if (nav) {
       nav.innerHTML = `
         <a href="/dashboard">Dashboard</a>
         <a href="/katalog">Katalog</a>
+        <a href="/profil-usaha">Profil usaha</a>
         <span class="nav-user">Hai, ${name.replace(/[&<>"']/g, '')}</span>
         <button class="nav-logout" type="button" id="navLogout">Keluar</button>
       `;

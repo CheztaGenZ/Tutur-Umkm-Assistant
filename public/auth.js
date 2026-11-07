@@ -84,7 +84,7 @@ form.addEventListener('submit', async (event) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Tidak bisa masuk. Coba lagi.');
-    location.replace(next);
+    location.replace(data.user?.needsProfile ? '/profil-usaha' : next);
   } catch (err) {
     showAlert(err.message);
     submit.disabled = false;

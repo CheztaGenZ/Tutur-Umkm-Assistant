@@ -272,6 +272,7 @@ export function createServer({ db, wa, bus }) {
           name: user.name,
           avatar: user.avatar_url || '',
           termsAccepted: Boolean(user.terms_accepted),
+          needsProfile: !store.getBusinessProfile(db, user.id),
         }
       : null;
 
@@ -329,6 +330,45 @@ export function createServer({ db, wa, bus }) {
     if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
     const user = acceptTerms(db, req.user.id);
     res.json({ user: publicUser(user) });
+  });
+
+  /* ---------------------------- profil usaha ------------------------------- */
+
+  app.use('/api/business', express.json({ limit: '1mb' }));
+
+  app.get('/api/business', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    res.json({ profile: store.getBusinessProfile(db, req.user.id) });
+  });
+
+  app.post('/api/business', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    try {
+      const profile = store.upsertBusinessProfile(db, req.user.id, req.body || {});
+      const owner = req.user.id;
+      const facts = [
+        ['bisnis-jam', 'jam', 'Jam buka', profile.hours, 'jam buka, open, hours, tutup'],
+        ['bisnis-lokasi', 'lokasi', 'Lokasi', profile.location, 'lokasi, alamat, location, address'],
+        ['bisnis-keunggulan', 'umum', 'Keunggulan', profile.specialty, 'keunggulan, spesial, menu andalan'],
+        ['bisnis-kontak', 'umum', 'Kontak', profile.contact, 'kontak, telepon, whatsapp, wa'],
+        ['bisnis-catatan', 'umum', 'Catatan usaha', profile.notes, 'catatan, info, kebijakan'],
+      ];
+      for (const [id, category, title, body, keywords] of facts) {
+        if (!body) continue;
+        store.upsertKnowledge(db, {
+          id,
+          ownerId: owner,
+          category,
+          title,
+          body,
+          keywords,
+          active: 1,
+        });
+      }
+      res.json({ profile, user: publicUser(req.user) });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   const startOAuth = (provider) => (req, res) => {
@@ -428,7 +468,8 @@ export function createServer({ db, wa, bus }) {
       const token = createSession(db, user.id);
       sessionCookie(req, res, token);
       res.append('Set-Cookie', serializeCookie('oauth_state', '', { maxAge: 0 }));
-      res.redirect(user.terms_accepted ? '/katalog' : '/persetujuan');
+      if (!user.terms_accepted) return res.redirect('/persetujuan');
+      return res.redirect(store.getBusinessProfile(db, user.id) ? '/katalog' : '/profil-usaha');
     } catch (err) {
       res.redirect(`/masuk?error=${provider}_gagal`);
     }
@@ -437,7 +478,10 @@ export function createServer({ db, wa, bus }) {
   app.get('/auth/google/callback', finishOAuth('google'));
   app.get('/auth/facebook/callback', finishOAuth('facebook'));
 
-  app.use(['/api/products', '/api/knowledge'], express.json({ limit: '8mb' }));
+  app.use(
+    ['/api/products', '/api/knowledge', '/api/business'],
+    express.json({ limit: '8mb' }),
+  );
 
   /* -------------------------------- katalog -------------------------------- */
 
@@ -551,6 +595,9 @@ export function createServer({ db, wa, bus }) {
   });
   app.get('/persetujuan', (req, res) => {
     res.sendFile(path.join(publicDir, 'persetujuan.html'));
+  });
+  app.get('/profil-usaha', (req, res) => {
+    res.sendFile(path.join(publicDir, 'profil-usaha.html'));
   });
   app.get('/playground.css', (req, res) => {
     res.type('text/css').sendFile(path.join(publicDir, 'playground.css'));
