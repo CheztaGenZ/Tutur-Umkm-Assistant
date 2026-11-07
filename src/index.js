@@ -9,11 +9,21 @@ import { repairLidContacts } from './wa/contactRepair.js';
 import { watchInbox } from './ingest/autoimport.js';
 import { processStatusJobs } from './wa/statusWorker.js';
 import { createServer } from './server.js';
+import { seedDemo } from './demo/seed.js';
 
 const dataDir = path.resolve(config.dataDir);
 const inboxDir = process.env.IMPORT_INBOX || 'import-inbox';
 const db = openDb(dataDir);
 setUsageSink((row) => recordAiUsage(db, row));
+
+if (config.demo.enabled) {
+  const seeded = seedDemo({ db });
+  if (seeded.contacts || seeded.knowledge) {
+    console.log(
+      `  Demo     : ${seeded.contacts} kontak, ${seeded.knowledge} sumber, ${seeded.examples} contoh`,
+    );
+  }
+}
 
 const bus = new EventEmitter();
 bus.setMaxListeners(100);
@@ -105,7 +115,9 @@ setInterval(() => {
   });
 }, 30000);
 
-if (process.env.WA_DISABLED === '1') {
+if (config.demo.enabled) {
+  console.log('  WhatsApp : dimatikan (DEMO_MODE=1)');
+} else if (process.env.WA_DISABLED === '1') {
   console.log('  WhatsApp : dimatikan (WA_DISABLED=1)');
 } else {
   wa.start().catch((err) => {
