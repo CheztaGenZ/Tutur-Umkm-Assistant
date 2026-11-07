@@ -34,6 +34,9 @@ export function maskKey(key) {
 }
 
 export function isLocalRequest(req) {
+  // Di belakang reverse proxy, socket selalu 127.0.0.1. Jangan pernah
+  // menganggap request yang membawa alamat proxy sebagai akses lokal.
+  if (req?.headers?.['x-forwarded-for'] || req?.headers?.['x-real-ip']) return false;
   const ip = String(req?.socket?.remoteAddress || req?.ip || '').trim();
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
 }

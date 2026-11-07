@@ -164,12 +164,19 @@ export function seedDemo({ db, meName = 'Sari' } = {}) {
     knowledge += 1;
   }
 
-  if (store.kvGet(db, 'demo_baseline') == null) {
-    store.kvSet(
-      db,
-      'demo_baseline',
-      JSON.stringify({ days: 30, messages: 420, auto: 350, escalated: 18 }),
-    );
+  if (!store.getBusinessProfile(db, 'demo')) {
+    store.upsertBusinessProfile(db, 'demo', {
+      name: 'Sari Kitchen',
+      category: 'Warung makan',
+      location: 'Ubud, Gianyar, Bali',
+      hours: 'Setiap hari 08.00-21.00',
+      specialty: 'Nasi campur vegan, ayam bakar, es kelapa muda',
+      contact: '0812 3456 7890',
+      notes: 'Bisa antar radius 5 km. Menerima QRIS dan transfer bank.',
+      payment_methods: 'Tunai, QRIS, Transfer bank',
+      bank_info: 'BCA 1234567890 a/n Sari Kitchen',
+      qris_image_path: '/qris-demo.png',
+    });
   }
 
   let demoProducts = 0;

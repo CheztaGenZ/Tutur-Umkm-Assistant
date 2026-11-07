@@ -48,10 +48,10 @@
   <h1>Tutur</h1>
   <p class="sub">AI concierge untuk warung dan homestay Bali. Balas seperti pemiliknya, jawab dari data bisnis yang benar, dan tahu kapan harus diam.</p>
   <table class="meta">
-    <tr><td><strong>Nama tim</strong></td><td>[NAMA TIM]</td></tr>
-    <tr><td><strong>Anggota</strong></td><td>[ANGGOTA 1], [ANGGOTA 2], [ANGGOTA 3]</td></tr>
-    <tr><td><strong>Asal instansi</strong></td><td>[KAMPUS / KOMUNITAS]</td></tr>
-    <tr><td><strong>Kontak ketua</strong></td><td>[EMAIL] · [WHATSAPP]</td></tr>
+    <tr><td><strong>Nama tim</strong></td><td>Tutur</td></tr>
+    <tr><td><strong>Anggota</strong></td><td>Chesta Adabi Naufal</td></tr>
+    <tr><td><strong>Asal instansi</strong></td><td>Independen</td></tr>
+    <tr><td><strong>Kontak ketua</strong></td><td>Sarkash25@gmail.com</td></tr>
     <tr><td><strong>Kategori</strong></td><td>Mahasiswa/Umum</td></tr>
     <tr><td><strong>Tanggal</strong></td><td>7 November 2026</td></tr>
   </table>
@@ -103,11 +103,11 @@
 <p>Kami menjalankan 28 pertanyaan dua kali dengan model yang sama. Baseline menjawab dari pengetahuan umum tanpa data bisnis. Tutur menjawab dengan retrieval.</p>
 <table>
   <tr><th>Metrik</th><th>Tanpa knowledge base</th><th>Tutur</th></tr>
-  <tr><td>Jawaban benar</td><td>13/28</td><td><strong>28/28</strong></td></tr>
+  <tr><td>Lolos pemeriksaan kata kunci</td><td>13/28</td><td><strong>28/28</strong></td></tr>
   <tr><td>Harga karangan pada fakta yang tidak tersedia</td><td>tidak diukur</td><td><strong>0</strong></td></tr>
   <tr><td>Booking dan komplain dieskalasi</td><td>tidak konsisten</td><td><strong>4/4</strong></td></tr>
 </table>
-<p class="small">Metode: penilaian otomatis berbasis kata kunci pada 28 pertanyaan. Bukan penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
+<p class="small">Metode: penilaian otomatis berbasis kata kunci pada 28 pertanyaan. Ini sinyal internal pada test set kecil, bukan benchmark umum atau penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
 
 <h2>5. MVP &amp; Key Features</h2>
 <table>
@@ -155,13 +155,14 @@
 
 <h2>7. Innovation &amp; Differentiation</h2>
 <table>
-  <tr><th>Solusi existing</th><th>Keterbatasan</th><th>Tutur</th></tr>
-  <tr><td>Quick reply dan template</td><td>Kaku, tidak paham konteks</td><td>Meniru gaya menulis pemilik</td></tr>
-  <tr><td>Chatbot FAQ</td><td>Mengarang saat jawaban tidak ada</td><td>Menahan diri dan meminta konfirmasi pemilik</td></tr>
-  <tr><td>Auto-reply agresif</td><td>Membalas semua pesan, termasuk spam</td><td>Memilih auto, draft, atau ignore</td></tr>
-  <tr><td>Dashboard analytics</td><td>Alasan keputusan tidak terlihat</td><td>Decision trace yang bisa dibaca juri</td></tr>
+  <tr><th>Solusi 2026</th><th>Kelebihan</th><th>Keterbatasan untuk warung</th></tr>
+  <tr><td>Meta Business Agent / WhatsApp Business AI</td><td>Gratis untuk mulai, resmi, native di WhatsApp, bisa meniru tone dan handoff</td><td>Generik, data di platform Meta, kontrol policy dan audit terbatas</td></tr>
+  <tr><td>Kata.ai, Qiscus, WATI, TapTalk</td><td>Matang, resmi, omnichannel, banyak integrasi</td><td>Harga dan setup untuk bisnis menengah, bukan warung mikro</td></tr>
+  <tr><td>Balesin, Le Asisten</td><td>Fokus UMKM Indonesia, harga lokal</td><td>Lebih ke template, broadcast, atau pencatatan operasional</td></tr>
+  <tr><td>Tutur</td><td>Gaya pemilik, jawaban dari data usaha, QRIS, pesanan, kontrol auto/draft/ignore, decision trace</td><td>Masih bergantung pada LLM pihak ketiga dan WhatsApp tidak resmi</td></tr>
 </table>
-<p><strong>Pembeda utama:</strong> Tutur mengatur apa yang dikatakan dan kapan AI boleh bicara. Untuk usaha kecil, kepercayaan lebih penting daripada jumlah balasan.</p>
+<p><strong>Pembeda utama:</strong> Meta membalas. Tutur memutuskan kapan harus membalas, kapan harus diam, dan dari data mana jawaban diambil. Untuk usaha kecil, kepercayaan lebih penting daripada jumlah balasan.</p>
+<p class="small">Rujukan: Meta Business Agent (CNBC Indonesia, 11 Agustus 2026); Kata.ai; Qiscus; WATI; TapTalk. Diakses 7 November 2026.</p>
 
 <h2>8. Impact &amp; Development Potential</h2>
 <p>Yang ingin dicapai: pemilik tidak perlu membalas pertanyaan berulang, tamu mendapat jawaban dalam hitungan detik, dan pesan berisiko tetap sampai ke manusia.</p>
@@ -170,6 +171,7 @@
   <li><strong>Pendapatan:</strong> balasan cepat di luar jam kerja menjaga calon tamu tetap dalam percakapan.</li>
   <li><strong>Risiko:</strong> booking dan komplain tidak pernah dikonfirmasi otomatis.</li>
 </ul>
+<p><strong>Rencana model bisnis:</strong> langganan Rp49.000 per bulan untuk satu nomor warung, Rp149.000 per bulan untuk homestay dengan katalog lebih besar, dan Rp399.000 untuk multi-cabang. Biaya AI rata-rata di bawah Rp15 per balasan. Onboarding dibantu agar pemilik tidak perlu mengurus API key sendiri.</p>
 <p><strong>Pengembangan berikutnya:</strong> pencarian semantik untuk katalog besar, sinkronisasi harga dari POS, dukungan multi-cabang, dan evaluasi dengan pemilik usaha nyata. Skala multi-tenant memerlukan Postgres dan antrean pesan.</p>
 <p><strong>Keterbatasan MVP:</strong> belum ada pilot dengan pelanggan nyata, evaluasi masih 28 pertanyaan, dan retrieval berbasis kata kunci. Semua angka dampak di UI diberi label simulasi.</p>
 

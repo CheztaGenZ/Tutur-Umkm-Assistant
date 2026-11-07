@@ -584,6 +584,24 @@ export async function generateReply({
   }
   const validSources = normalizeSources(out.used_sources).filter((id) => knowledgeIds.has(id));
 
+  // Angka dalam balasan harus muncul di sumber yang dikutip. Harga, jam,
+  // nomor rekening, dan jumlah tidak boleh datang dari luar data bisnis.
+  if (businessMode && finalReply && validSources.length) {
+    const sourceText = (knowledge || [])
+      .filter((k) => validSources.includes(k.id))
+      .map((k) => `${k.title || ''} ${k.body || ''} ${k.keywords || ''}`)
+      .join(' ')
+      .replace(/[.,]/g, '');
+    const replyNumbers = (String(finalReply).match(/\d[\d.,]*/g) || [])
+      .map((n) => n.replace(/[.,]/g, ''))
+      .filter((n) => n.length >= 2);
+    const ungrounded = replyNumbers.some((n) => !sourceText.includes(n));
+    if (ungrounded) {
+      finalReply = language === 'en' ? 'Let me check with the owner first.' : 'aku cek dulu ya ke pemilik';
+      forceOwner = true;
+    }
+  }
+
   const guarded = applyIntentGuards({
     intent: out.intent,
     needsOwner: out.needs_owner === true || forceOwner,

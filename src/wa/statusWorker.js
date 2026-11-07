@@ -45,7 +45,7 @@ export async function sendStatusJob({ db, wa, bus, ownerId = 'demo' }, job) {
     // Daftar penerima status: kontak bernomor telepon, lalu filter privasi WhatsApp.
     const allRecipients = db
       .prepare(
-        "SELECT jid FROM contacts WHERE owner_id = ? AND jid LIKE '%@s.whatsapp.net' UNION SELECT jid FROM wa_contacts WHERE jid LIKE '%@s.whatsapp.net'",
+        "SELECT jid FROM contacts WHERE owner_id = ? AND jid LIKE '%@s.whatsapp.net'",
       )
       .all(String(ownerId))
       .map((r) => r.jid);
