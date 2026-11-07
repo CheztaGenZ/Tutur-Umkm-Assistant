@@ -5,12 +5,13 @@
  */
 import crypto from 'node:crypto';
 
-export function seedHistory(db, jid, messages, meName, limit = 200) {
+export function seedHistory(db, jid, messages, meName, limit = 200, ownerId = 'demo') {
   if (!messages?.length) return 0;
 
+  const owner = String(ownerId);
   const tail = messages.slice(-limit);
   const stmt = db.prepare(
-    'INSERT OR IGNORE INTO messages (id, jid, direction, body, ts, status, reason) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT OR IGNORE INTO messages (id, owner_id, jid, direction, body, ts, status, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
   );
 
   let inserted = 0;
@@ -18,11 +19,12 @@ export function seedHistory(db, jid, messages, meName, limit = 200) {
     if (!m.text) continue;
     const id = `imp_${crypto
       .createHash('md5')
-      .update(`${jid}|${m.ts}|${m.text}`)
+      .update(`${owner}|${jid}|${m.ts}|${m.text}`)
       .digest('hex')
       .slice(0, 16)}`;
     const res = stmt.run(
       id,
+      owner,
       jid,
       m.author === meName ? 'out' : 'in',
       m.text,

@@ -38,9 +38,10 @@ export function extractText(message) {
 }
 
 export class WhatsAppClient extends EventEmitter {
-  constructor({ dataDir }) {
+  constructor({ dataDir, ownerId = 'demo' }) {
     super();
-    this.authDir = path.join(dataDir, 'auth');
+    this.ownerId = String(ownerId);
+    this.authDir = path.join(dataDir, 'wa', this.ownerId, 'auth');
     this.sock = null;
     this.state = { status: 'idle', qr: null, me: null, lastError: null, since: null };
     this.stopping = false;

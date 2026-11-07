@@ -35,6 +35,7 @@ import {
 } from './auth.js';
 import * as products from './products.js';
 import { aiConfigForOwner, aiInfoForOwner } from './ai/account.js';
+import { withAiConfig } from './ai/context.js';
 import { decryptSecret, encryptSecret } from './secrets.js';
 import AdmZip from 'adm-zip';
 
@@ -567,36 +568,9 @@ export function createServer({ db, wa, bus }) {
 
   /* -------------------------------- katalog -------------------------------- */
 
-  const ownerId = (req) => req.user?.id || 'demo';
-  const waOwnerId = () => store.kvGet(db, 'wa_owner_id') || null;
-  const phoneDigits = (value) => {
-    let digits = String(value || '').replace(/\D/g, '');
-    if (digits.startsWith('62')) digits = '0' + digits.slice(2);
-    return digits;
-  };
-  // Kalau nomor WhatsApp sama dengan kontak di salah satu profil usaha,
-  // ikat otomatis supaya tidak salah akun saat ada beberapa akun login.
-  const autoClaimByPhone = () => {
-    if (waOwnerId()) return;
-    const waNumber = phoneDigits(wa.snapshot().me?.number);
-    if (waNumber.length < 9) return;
-    const rows = db
-      .prepare(
-        "SELECT owner_id, contact FROM business_profiles WHERE contact IS NOT NULL AND TRIM(contact) != ''",
-      )
-      .all();
-    const matches = rows.filter((row) => phoneDigits(row.contact) === waNumber);
-    if (matches.length === 1) store.kvSet(db, 'wa_owner_id', matches[0].owner_id);
-  };
-  const ownsWhatsApp = (req) => {
-    if (!req.user) return true;
-    const owner = waOwnerId();
-    return Boolean(owner) && owner === req.user.id;
-  };
-  const canReadChat = (req) => {
-    if (!req.user) return true;
-    return ownsWhatsApp(req);
-  };
+  const ownerId = (req) => req.user?.id || config.ownerId;
+  const waClient = (req) => (typeof wa.client === 'function' ? wa.client(ownerId(req)) : wa);
+  const pausedKey = (owner) => `paused:${owner}`;
 
   app.get('/api/products', (req, res) => {
     if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
@@ -757,16 +731,9 @@ export function createServer({ db, wa, bus }) {
 
   app.get('/api/status', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    autoClaimByPhone();
-    const owner = waOwnerId();
-    const claimed = Boolean(owner);
-    const ownedByMe = !owner ? true : !req.user || owner === req.user.id;
-    let snapshot = wa.snapshot();
-    if (req.user && owner && owner !== req.user.id) {
-      snapshot = { status: 'idle', qr: null, me: null, lastError: null, since: null };
-    }
-    snapshot.claimed = claimed;
-    snapshot.ownedByMe = ownedByMe;
+    const owner = ownerId(req);
+    const client = waClient(req);
+    const snapshot = client.snapshot();
     if (!isLocalRequest(req)) {
       snapshot.qr = null;
       snapshot.me = null;
@@ -776,8 +743,8 @@ export function createServer({ db, wa, bus }) {
     const accountAi = req.user ? aiConfigForOwner(db, req.user.id) : null;
     res.json({
       wa: snapshot,
-      paused: store.kvGet(db, 'paused') === '1',
-      sentToday: ownedByMe ? store.countOutSince(db, day.getTime()) : 0,
+      paused: store.kvGet(db, pausedKey(owner)) === '1',
+      sentToday: store.countOutSince(db, day.getTime(), null, owner),
       aiReady: req.user ? Boolean(accountAi) : Boolean(config.ai.apiKey),
       canWrite: isLocalRequest(req),
       config: {
@@ -791,10 +758,12 @@ export function createServer({ db, wa, bus }) {
         autoConfidenceMin: config.safety.autoConfidenceMin,
       },
       usage: store.aiUsageSummary(db),
-      privacy: wa.statusPrivacy
+      privacy: client.statusPrivacy
         ? {
-            mode: wa.statusPrivacy.mode ?? null,
-            count: Array.isArray(wa.statusPrivacy.userJid) ? wa.statusPrivacy.userJid.length : 0,
+            mode: client.statusPrivacy.mode ?? null,
+            count: Array.isArray(client.statusPrivacy.userJid)
+              ? client.statusPrivacy.userJid.length
+              : 0,
           }
         : null,
     });
@@ -953,48 +922,31 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.post('/api/pause', (req, res) => {
-    store.kvSet(db, 'paused', req.body?.paused ? '1' : '0');
-    res.json({ paused: store.kvGet(db, 'paused') === '1' });
+    const key = pausedKey(ownerId(req));
+    store.kvSet(db, key, req.body?.paused ? '1' : '0');
+    res.json({ paused: store.kvGet(db, key) === '1' });
   });
 
-  // Klaim nomor WhatsApp yang sudah terhubung untuk akun yang sedang login.
-  app.post('/api/wa/claim', (req, res) => {
-    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
-    const owner = waOwnerId();
-    if (owner && owner !== req.user.id) {
-      return res.status(409).json({ error: 'Nomor ini sudah dipakai akun lain.' });
-    }
-    if (wa.snapshot().status !== 'open') {
-      return res.status(400).json({ error: 'WhatsApp belum terhubung.' });
-    }
-    store.kvSet(db, 'wa_owner_id', req.user.id);
-    res.json({ ok: true, ownerId: req.user.id });
-  });
-
-  // Putuskan sesi WhatsApp lalu mulai bersih (QR baru).
+  // Setiap akun punya koneksi WhatsApp sendiri.
   app.post('/api/wa/connect', async (req, res) => {
-    const owner = waOwnerId();
-    if (owner && req.user && owner !== req.user.id) {
-      return res.status(409).json({ error: 'WhatsApp sudah terhubung ke akun lain.' });
-    }
-    if (req.user && !owner) store.kvSet(db, 'wa_owner_id', req.user.id);
+    const owner = ownerId(req);
     try {
-      await wa.start();
-      res.json({ ok: true, wa: wa.snapshot() });
+      await wa.start(owner);
+      res.json({ ok: true, wa: wa.snapshot(owner) });
     } catch (err) {
       res.status(500).json({ error: `Tidak bisa memulai WhatsApp: ${err.message}` });
     }
   });
 
   app.post('/api/wa/logout', async (req, res) => {
-    const owner = waOwnerId();
-    if (owner && req.user && owner !== req.user.id) {
-      return res.status(403).json({ error: 'Hanya akun pemilik nomor yang bisa memutus WhatsApp.' });
-    }
+    const owner = ownerId(req);
     try {
-      if (req.user) store.kvSet(db, 'wa_owner_id', '');
-      await wa.restartFresh();
-      bus.emit('event', { type: 'log', message: 'Sesi WhatsApp diputus. Scan QR baru.' });
+      await wa.restartFresh(owner);
+      bus.emit({
+        type: 'log',
+        ownerId: owner,
+        message: 'Sesi WhatsApp diputus. Scan QR baru.',
+      });
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1041,7 +993,9 @@ export function createServer({ db, wa, bus }) {
     res.write('retry: 3000\n\n');
 
     const local = isLocalRequest(req);
+    const myOwner = ownerId(req);
     onEvent = (event) => {
+      if (req.user && event?.ownerId && event.ownerId !== myOwner) return;
       const safe = local ? event : redactEventForLan(event);
       res.write(`data: ${JSON.stringify(safe)}\n\n`);
     };
@@ -1052,8 +1006,7 @@ export function createServer({ db, wa, bus }) {
   /* -------------------------------- contacts ------------------------------- */
 
   app.get('/api/contacts', (req, res) => {
-    if (!canReadChat(req)) return res.json([]);
-    const rows = store.listContacts(db, String(req.query.q || ''));
+    const rows = store.listContacts(db, String(req.query.q || ''), ownerId(req));
     res.json(
       rows.map((c) => ({
         jid: c.jid,
@@ -1077,11 +1030,12 @@ export function createServer({ db, wa, bus }) {
       if (name && String(name).trim().length > 100) {
         return res.status(400).json({ error: 'Nama kontak maksimal 100 karakter' });
       }
-      if (mode) store.setContactMode(db, jid, mode);
-      if (register) store.setContactRegister(db, jid, register);
-      if (language) store.setContactLanguage(db, jid, language);
-      if (name) store.upsertContact(db, { jid, name });
-      const c = store.getContact(db, jid);
+      const owner = ownerId(req);
+      if (mode) store.setContactMode(db, jid, mode, owner);
+      if (register) store.setContactRegister(db, jid, register, owner);
+      if (language) store.setContactLanguage(db, jid, language, owner);
+      if (name) store.upsertContact(db, { ownerId: owner, jid, name });
+      const c = store.getContact(db, jid, owner);
       if (!c) return res.status(404).json({ error: 'Kontak tidak ditemukan' });
       res.json({ jid: c.jid, name: c.name, mode: c.mode, register: c.register, language: c.language });
     } catch (err) {
@@ -1092,12 +1046,11 @@ export function createServer({ db, wa, bus }) {
   /* --------------------------------- drafts -------------------------------- */
 
   app.get('/api/drafts', (req, res) => {
-    if (!canReadChat(req)) return res.json([]);
     const status = String(req.query.status || 'pending');
     if (!isLocalRequest(req) && status !== 'pending') {
       return res.status(403).json({ error: 'Riwayat draft hanya bisa dibaca dari PC.' });
     }
-    res.json(store.listDrafts(db, status));
+    res.json(store.listDrafts(db, status, ownerId(req)));
   });
 
   app.delete('/api/drafts', (req, res) => {
@@ -1105,8 +1058,12 @@ export function createServer({ db, wa, bus }) {
     if (status !== 'pending') {
       return res.status(400).json({ error: 'Hanya draft pending yang bisa dibersihkan.' });
     }
-    const deleted = store.clearDrafts(db, status);
-    bus.emit('event', { type: 'log', message: `${deleted} draft dibersihkan` });
+    const deleted = store.clearDrafts(db, status, ownerId(req));
+    bus.emit('event', {
+      type: 'log',
+      ownerId: ownerId(req),
+      message: `${deleted} draft dibersihkan`,
+    });
     res.json({ ok: true, deleted });
   });
 
@@ -1115,13 +1072,15 @@ export function createServer({ db, wa, bus }) {
     if (String(reply ?? '').length > 4000) {
       return res.status(400).json({ error: 'Balasan maksimal 4000 karakter' });
     }
-    const draft = store.getDraft(db, req.params.id);
+    const draft = store.getDraft(db, req.params.id, ownerId(req));
     if (!draft) return res.status(404).json({ error: 'Draft tidak ditemukan' });
-    res.json(store.updateDraft(db, draft.id, { reply: String(reply ?? '') }));
+    res.json(
+      store.updateDraft(db, draft.id, { reply: String(reply ?? '') }, ownerId(req)),
+    );
   });
 
   app.post('/api/drafts/:id/send', async (req, res) => {
-    const draft = store.getDraft(db, req.params.id);
+    const draft = store.getDraft(db, req.params.id, ownerId(req));
     if (!draft) return res.status(404).json({ error: 'Draft tidak ditemukan' });
     if (draft.status !== 'pending') return res.status(409).json({ error: 'Draft sudah diproses' });
 
@@ -1130,13 +1089,14 @@ export function createServer({ db, wa, bus }) {
     if (text.length > 4000) return res.status(400).json({ error: 'Balasan maksimal 4000 karakter' });
 
     // Klaim sebelum await: dua tab/retry tidak boleh mengirim draft yang sama.
-    if (!store.claimDraft(db, draft.id)) {
+    if (!store.claimDraft(db, draft.id, 'pending', 'sending', ownerId(req))) {
       return res.status(409).json({ error: 'Draft sudah diproses' });
     }
 
     try {
-      const sent = await wa.sendText(draft.jid, text);
+      const sent = await waClient(req).sendText(draft.jid, text);
       store.insertMessage(db, {
+        ownerId: ownerId(req),
         id: sent?.key?.id || `manual_${Date.now()}`,
         jid: draft.jid,
         direction: 'out',
@@ -1145,40 +1105,63 @@ export function createServer({ db, wa, bus }) {
         status: 'sent',
         reason: 'disetujui manual dari dashboard',
       });
-      store.updateDraft(db, draft.id, { reply: text, status: 'sent', sent_at: Date.now() });
-      bus.emit('event', { type: 'sent', jid: draft.jid, reply: text, manual: true });
+      store.updateDraft(
+        db,
+        draft.id,
+        { reply: text, status: 'sent', sent_at: Date.now() },
+        ownerId(req),
+      );
+      bus.emit('event', {
+        type: 'sent',
+        ownerId: ownerId(req),
+        jid: draft.jid,
+        reply: text,
+        manual: true,
+      });
       res.json({ ok: true });
     } catch (err) {
-      store.updateDraft(db, draft.id, { status: 'pending' });
+      store.updateDraft(db, draft.id, { status: 'pending' }, ownerId(req));
       res.status(500).json({ error: err.message });
     }
   });
 
   app.post('/api/drafts/:id/discard', (req, res) => {
-    const draft = store.getDraft(db, req.params.id);
+    const draft = store.getDraft(db, req.params.id, ownerId(req));
     if (!draft) return res.status(404).json({ error: 'Draft tidak ditemukan' });
-    store.updateDraft(db, draft.id, { status: 'discarded' });
+    store.updateDraft(db, draft.id, { status: 'discarded' }, ownerId(req));
     res.json({ ok: true });
   });
 
   app.post('/api/drafts/:id/regenerate', async (req, res) => {
-    const draft = store.getDraft(db, req.params.id);
+    const owner = ownerId(req);
+    const draft = store.getDraft(db, req.params.id, owner);
     if (!draft) return res.status(404).json({ error: 'Draft tidak ditemukan' });
-    const contact = store.getContact(db, draft.jid);
+    const contact = store.getContact(db, draft.jid, owner);
     try {
-      const result = await generateReply({
-        meName: req.user?.name || config.me,
-        contactName: contact?.name || String(draft.jid).split('@')[0],
-        style: pickStyle(db, contact),
-        relationship: contact?.relationship ?? null,
-        examples: store.listExamples(db, draft.jid, config.style.fewShotCount),
-        messages: store.recentMessages(db, draft.jid, config.style.historyTurns * 2),
-      });
-      const updated = store.updateDraft(db, draft.id, {
-        reply: result.reply,
-        confidence: result.confidence,
-        reason: result.reason,
-      });
+      const ai = req.user ? aiConfigForOwner(db, req.user.id) : config.ai;
+      if (req.user && !ai) {
+        return res.status(400).json({ error: 'API key AI akun ini belum diatur.' });
+      }
+      const result = await withAiConfig(ai, () =>
+        generateReply({
+          meName: req.user?.name || config.me,
+          contactName: contact?.name || String(draft.jid).split('@')[0],
+          style: pickStyle(db, contact),
+          relationship: contact?.relationship ?? null,
+          examples: store.listExamples(db, draft.jid, config.style.fewShotCount, owner),
+          messages: store.recentMessages(db, draft.jid, config.style.historyTurns * 2, owner),
+        }),
+      );
+      const updated = store.updateDraft(
+        db,
+        draft.id,
+        {
+          reply: result.reply,
+          confidence: result.confidence,
+          reason: result.reason,
+        },
+        owner,
+      );
       res.json(updated);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1202,11 +1185,10 @@ export function createServer({ db, wa, bus }) {
 
   // ------------------------------- aktivitas -------------------------------
   app.get('/api/activities', (req, res) => {
-    if (!canReadChat(req)) return res.json({ active: null, list: [] });
-    const active = store.getActiveActivity(db);
+    const active = store.getActiveActivity(db, ownerId(req));
     res.json({
       active: publicActivity(active),
-      list: store.listActivities(db, 20).map(publicActivity),
+      list: store.listActivities(db, 20, ownerId(req)).map(publicActivity),
     });
   });
 
@@ -1241,15 +1223,15 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.delete('/api/activities/:id', (req, res) => {
-    const a = store.getActivity(db, req.params.id);
+    const a = store.getActivity(db, req.params.id, ownerId(req));
     if (a?.image_path) { try { fs.unlinkSync(a.image_path); } catch {} }
-    store.deleteActivity(db, req.params.id);
+    store.deleteActivity(db, req.params.id, ownerId(req));
     res.json({ ok: true });
   });
 
   // ------------------------------ status jobs ------------------------------
   app.get('/api/status-jobs', (req, res) => {
-    res.json(store.listStatusJobs(db, 60).map(publicStatusJob));
+    res.json(store.listStatusJobs(db, 60, ownerId(req)).map(publicStatusJob));
   });
 
   app.post('/api/status-jobs', (req, res) => {
@@ -1263,6 +1245,7 @@ export function createServer({ db, wa, bus }) {
       if (!imagePath) return res.status(400).json({ error: 'Format gambar tidak dikenali' });
 
       const job = store.createStatusJob(db, {
+        ownerId: ownerId(req),
         id,
         imagePath,
         caption: String(req.body?.caption || '').slice(0, 500),
@@ -1279,14 +1262,17 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.delete('/api/status-jobs/:id', (req, res) => {
-    const job = store.getStatusJob(db, req.params.id);
+    const job = store.getStatusJob(db, req.params.id, ownerId(req));
     if (job?.image_path) { try { fs.unlinkSync(job.image_path); } catch {} }
-    db.prepare('DELETE FROM status_jobs WHERE id = ?').run(req.params.id);
+    db.prepare('DELETE FROM status_jobs WHERE id = ? AND owner_id = ?').run(
+      req.params.id,
+      ownerId(req),
+    );
     res.json({ ok: true });
   });
 
   app.post('/api/status-jobs/:id/revoke', async (req, res) => {
-    const job = store.getStatusJob(db, req.params.id);
+    const job = store.getStatusJob(db, req.params.id, ownerId(req));
     if (!job) return res.status(404).json({ error: 'Status tidak ditemukan' });
     if (!job.wa_message_id) {
       return res.status(409).json({
@@ -1299,9 +1285,12 @@ export function createServer({ db, wa, bus }) {
       recipients = JSON.parse(job.wa_status_jids || '[]');
     } catch {}
     try {
-      await wa.revokeStatus(job.wa_message_id, recipients);
+      await waClient(req).revokeStatus(job.wa_message_id, recipients);
       if (job.image_path) { try { fs.unlinkSync(job.image_path); } catch {} }
-      db.prepare('DELETE FROM status_jobs WHERE id = ?').run(job.id);
+      db.prepare('DELETE FROM status_jobs WHERE id = ? AND owner_id = ?').run(
+        job.id,
+        ownerId(req),
+      );
       bus.emit('event', {
         type: 'log',
         message: `Status ditarik dari WhatsApp: ${job.caption || '(tanpa caption)'}`,
@@ -1313,14 +1302,17 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.post('/api/status-jobs/:id/post-now', async (req, res) => {
-    const job = store.getStatusJob(db, req.params.id);
+    const job = store.getStatusJob(db, req.params.id, ownerId(req));
     if (!job) return res.status(404).json({ error: 'Status tidak ditemukan' });
     if (job.status !== 'pending') {
       return res.status(409).json({ error: 'Status ini sudah diproses.' });
     }
     try {
-      const ok = await sendStatusJob({ db, wa, bus }, job);
-      res.json({ ok, status: store.getStatusJob(db, job.id)?.status });
+      const ok = await sendStatusJob(
+        { db, wa: waClient(req), bus, ownerId: ownerId(req) },
+        job,
+      );
+      res.json({ ok, status: store.getStatusJob(db, job.id, ownerId(req))?.status });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -1335,52 +1327,59 @@ export function createServer({ db, wa, bus }) {
       return res.status(400).json({ error: 'Pesan maksimal 4000 karakter' });
     }
 
-    const contact = store.getContact(db, jid);
+    const owner = ownerId(req);
+    const contact = store.getContact(db, jid, owner);
     if (!contact) return res.status(404).json({ error: 'Kontak tidak ditemukan' });
 
     try {
       const style = pickStyle(db, contact);
-      const examples = store.listExamples(db, jid, config.style.fewShotCount);
-      const history = store.recentMessages(db, jid, config.style.historyTurns * 2);
-      const activity = store.getActiveActivity(db);
+      const examples = store.listExamples(db, jid, config.style.fewShotCount, owner);
+      const history = store.recentMessages(db, jid, config.style.historyTurns * 2, owner);
+      const activity = store.getActiveActivity(db, owner);
       const recentReplies = db
         .prepare(
-          "SELECT body FROM messages WHERE jid = ? AND direction = 'out' AND body != '[stiker]' ORDER BY ts DESC LIMIT 8",
+          "SELECT body FROM messages WHERE owner_id = ? AND jid = ? AND direction = 'out' AND body != '[stiker]' ORDER BY ts DESC LIMIT 8",
         )
-        .all(jid)
+        .all(owner, jid)
         .map((r) => r.body);
 
-      const result = await generateReply({
-        meName: req.user?.name || config.me,
-        contactName: contact.name,
-        style,
-        relationship: contact.relationship,
-        examples,
-        messages: [...history, { direction: 'in', body: message }],
-        recentReplies,
-        avoidPhrases: [],
-        register: contact.register,
-        alias: contact.alias,
-        language: contact.language,
-        maxBubbles: contact.burst || 3,
-        memory: contact.memory,
-        activity,
-        usageKind: 'test',
-      });
+      const ai = req.user ? aiConfigForOwner(db, req.user.id) : config.ai;
+      if (req.user && !ai) {
+        return res.status(400).json({ error: 'API key AI akun ini belum diatur.' });
+      }
+      const result = await withAiConfig(ai, () =>
+        generateReply({
+          meName: req.user?.name || config.me,
+          contactName: contact.name,
+          style,
+          relationship: contact.relationship,
+          examples,
+          messages: [...history, { direction: 'in', body: message }],
+          recentReplies,
+          avoidPhrases: [],
+          register: contact.register,
+          alias: contact.alias,
+          language: contact.language,
+          maxBubbles: contact.burst || 3,
+          memory: contact.memory,
+          activity,
+          usageKind: 'test',
+        }),
+      );
 
       const lastOut = db
         .prepare(
-          "SELECT ts FROM messages WHERE jid = ? AND direction = 'out' AND ts <= ? ORDER BY ts DESC LIMIT 1",
+          "SELECT ts FROM messages WHERE owner_id = ? AND jid = ? AND direction = 'out' AND ts <= ? ORDER BY ts DESC LIMIT 1",
         )
-        .get(jid, Date.now());
+        .get(owner, jid, Date.now());
       const decision = decide({
         jid,
         contact,
-        paused: store.kvGet(db, 'paused') === '1',
+        paused: store.kvGet(db, pausedKey(owner)) === '1',
         counts: {
-          day: store.countOutSince(db, dayStart()),
-          hour: store.countOutSince(db, hourStart()),
-          contactToday: store.countOutSince(db, dayStart(), jid),
+          day: store.countOutSince(db, dayStart(), null, owner),
+          hour: store.countOutSince(db, hourStart(), null, owner),
+          contactToday: store.countOutSince(db, dayStart(), jid, owner),
           lastContactSentAt: lastOut?.ts ?? 0,
         },
       });
@@ -1553,14 +1552,15 @@ export function createServer({ db, wa, bus }) {
       const pairs = buildPairs(parsed.messages, meName);
 
       // Tentukan JID: dari pilihan user > nama yang pernah di-import > placeholder.
+      const owner = ownerId(req);
       let targetJid = explicitJid;
       if (!targetJid) {
-        const existing = store.findContactByImportName(db, chosen.name);
+        const existing = store.findContactByImportName(db, chosen.name, owner);
         targetJid = existing?.jid ?? `name:${slug(chosen.name)}`;
       }
 
       // Jangan biarkan file yang lebih sedikit menimpa profil yang lebih lengkap.
-      const current = store.getContact(db, targetJid);
+      const current = store.getContact(db, targetJid, owner);
       if (current && current.sample_count > myTexts.length && !req.body?.force) {
         return res.json({
           ok: true,
@@ -1576,15 +1576,22 @@ export function createServer({ db, wa, bus }) {
       }
 
       store.upsertContact(db, {
+        ownerId: owner,
         jid: targetJid,
         number: targetJid.endsWith('@s.whatsapp.net') ? targetJid.split('@')[0] : null,
         name: chosen.name,
         importName: chosen.name,
       });
 
-      db.prepare('DELETE FROM examples WHERE jid = ?').run(targetJid);
+      db.prepare('DELETE FROM examples WHERE owner_id = ? AND jid = ?').run(owner, targetJid);
       for (const p of pairs.slice(-400)) {
-        store.addExample(db, { jid: targetJid, their: p.their, mine: p.mine, ts: p.ts });
+        store.addExample(db, {
+          ownerId: owner,
+          jid: targetJid,
+          their: p.their,
+          mine: p.mine,
+          ts: p.ts,
+        });
       }
 
       let relationship = null;
@@ -1600,17 +1607,22 @@ export function createServer({ db, wa, bus }) {
         }
       }
 
-      store.saveProfile(db, targetJid, {
-        styleProfile: style,
-        relationship,
-        sampleCount: myTexts.length,
-      });
+      store.saveProfile(
+        db,
+        targetJid,
+        {
+          styleProfile: style,
+          relationship,
+          sampleCount: myTexts.length,
+        },
+        owner,
+      );
 
-      const seeded = seedHistory(db, targetJid, parsed.messages, meName, 200);
+      const seeded = seedHistory(db, targetJid, parsed.messages, meName, 200, owner);
 
-      const justSaved = store.getContact(db, targetJid);
+      const justSaved = store.getContact(db, targetJid, owner);
       if (!justSaved?.register || justSaved.register === 'auto') {
-        store.setContactRegister(db, targetJid, detectRegister(myTexts));
+        store.setContactRegister(db, targetJid, detectRegister(myTexts), owner);
       }
 
       // Gaya global = sampel terbesar, dipakai untuk kontak tanpa data.
@@ -1657,7 +1669,7 @@ export function createServer({ db, wa, bus }) {
       : null;
 
     try {
-      const requestId = await wa.requestHistory(jid, count, anchor);
+      const requestId = await waClient(req).requestHistory(jid, count, anchor);
       res.json({ ok: true, requestId, note: 'Riwayat masuk beberapa detik lagi lewat sinkronisasi.' });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1668,19 +1680,24 @@ export function createServer({ db, wa, bus }) {
   app.post('/api/contacts/:jid/link', (req, res) => {
     const jid = req.params.jid;
     const query = String(req.body?.query || '').trim();
-    const real = store.getContact(db, jid);
+    const owner = ownerId(req);
+    const real = store.getContact(db, jid, owner);
     if (!real) return res.status(404).json({ error: 'Kontak tidak ditemukan' });
 
     const imported = store
-      .listContacts(db, query)
+      .listContacts(db, query, owner)
       .find((c) => c.jid.startsWith('name:'));
     if (!imported) return res.status(404).json({ error: `Profil import "${query}" tidak ditemukan` });
     if (imported.jid === jid) return res.status(400).json({ error: 'Kontak sama' });
 
     try {
       db.exec('BEGIN');
-      db.prepare('DELETE FROM examples WHERE jid = ?').run(jid);
-      db.prepare('UPDATE examples SET jid = ? WHERE jid = ?').run(jid, imported.jid);
+      db.prepare('DELETE FROM examples WHERE owner_id = ? AND jid = ?').run(owner, jid);
+      db.prepare('UPDATE examples SET jid = ? WHERE owner_id = ? AND jid = ?').run(
+        jid,
+        owner,
+        imported.jid,
+      );
       db.prepare(
         `UPDATE contacts SET
            style_profile = COALESCE(?, style_profile),
@@ -1691,7 +1708,7 @@ export function createServer({ db, wa, bus }) {
            alias         = COALESCE(alias, ?),
            import_name   = COALESCE(import_name, ?),
            updated_at    = ?
-         WHERE jid = ?`,
+         WHERE owner_id = ? AND jid = ?`,
       ).run(
         imported.style_profile,
         imported.relationship,
@@ -1701,12 +1718,13 @@ export function createServer({ db, wa, bus }) {
         imported.alias,
         imported.import_name,
         Date.now(),
+        owner,
         jid,
       );
-      db.prepare('DELETE FROM contacts WHERE jid = ?').run(imported.jid);
+      db.prepare('DELETE FROM contacts WHERE owner_id = ? AND jid = ?').run(owner, imported.jid);
       db.exec('COMMIT');
 
-      const merged = store.getContact(db, jid);
+      const merged = store.getContact(db, jid, owner);
       bus.emit('event', {
         type: 'log',
         message: `${imported.name} digabung ke ${merged.name}`,
@@ -1729,14 +1747,18 @@ export function createServer({ db, wa, bus }) {
   // Bangun ulang profil dari pesan yang sudah tersimpan (belajar sambil jalan).
   app.post('/api/contacts/:jid/rebuild', async (req, res) => {
     const jid = req.params.jid;
-    if (!store.getContact(db, jid)) return res.status(404).json({ error: 'Kontak tidak ditemukan' });
+    const owner = ownerId(req);
+    if (!store.getContact(db, jid, owner)) {
+      return res.status(404).json({ error: 'Kontak tidak ditemukan' });
+    }
     try {
-      const result = await rebuildProfile(db, jid);
+      const result = await rebuildProfile(db, jid, { ownerId: owner });
       if (!result.ok) return res.status(400).json({ error: result.reason });
       bus.emit('event', {
         type: 'ingest',
+        ownerId: owner,
         jid,
-        contact: store.getContact(db, jid)?.name,
+        contact: store.getContact(db, jid, owner)?.name,
         samples: result.samples,
         auto: false,
       });
@@ -1750,7 +1772,7 @@ export function createServer({ db, wa, bus }) {
     if (!isLocalRequest(req)) {
       return res.status(403).json({ error: 'Konteks chat hanya bisa dibaca dari PC.' });
     }
-    const c = store.getContact(db, req.params.jid);
+    const c = store.getContact(db, req.params.jid, ownerId(req));
     if (!c) return res.status(404).json({ error: 'Kontak tidak ditemukan' });
     res.json({
       jid: c.jid,
@@ -1759,8 +1781,8 @@ export function createServer({ db, wa, bus }) {
       style: parseStyle(c.style_profile),
       relationship: c.relationship,
       sampleCount: c.sample_count,
-      messages: store.recentMessages(db, c.jid, 30),
-      examples: store.listExamples(db, c.jid, 8),
+      messages: store.recentMessages(db, c.jid, 30, ownerId(req)),
+      examples: store.listExamples(db, c.jid, 8, ownerId(req)),
     });
   });
 

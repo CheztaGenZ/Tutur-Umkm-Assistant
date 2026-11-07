@@ -37,6 +37,10 @@ Tutur, the Bali DigiFest 2026 submission.
 - Account profile page at `/profil-akun` for changing display name and password, with back links to dashboard and business profile.
 - Dashboard adds Beranda, Profil usaha, and Profil akun navigation.
 - Logged-in Coba Chat uses the account name instead of the demo Sari Kitchen name when the business profile is incomplete.
+- Each account now runs its own WhatsApp connection with a separate auth folder under `data/wa/<ownerId>/auth`.
+- Contacts, messages, drafts, examples, activities, and status jobs are scoped by `owner_id`.
+- SSE live events are filtered per account.
+- Dashboard, QR, connect, logout, and status controls operate on the signed-in account only.
 
 ### Security
 

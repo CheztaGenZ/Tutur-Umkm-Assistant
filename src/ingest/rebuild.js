@@ -6,16 +6,21 @@ import { analyzeStyle } from './style.js';
 import { detectRegister } from './style.js';
 import { cleanMessage } from './parseExport.js';
 import { generateRelationship } from '../ai/prompt.js';
+import { aiConfigForOwner } from '../ai/account.js';
+import { withAiConfig } from '../ai/context.js';
 import { config } from '../config.js';
 import * as store from '../db.js';
 
-export async function rebuildProfile(db, jid, { withRelationship = true } = {}) {
-  const contact = store.getContact(db, jid);
+export async function rebuildProfile(db, jid, { withRelationship = true, ownerId = 'demo' } = {}) {
+  const owner = String(ownerId);
+  const contact = store.getContact(db, jid, owner);
   if (!contact) return { ok: false, reason: 'kontak tidak ditemukan' };
 
   const rows = db
-    .prepare('SELECT direction, body, ts FROM messages WHERE jid = ? ORDER BY ts ASC')
-    .all(jid);
+    .prepare(
+      'SELECT direction, body, ts FROM messages WHERE owner_id = ? AND jid = ? ORDER BY ts ASC',
+    )
+    .all(owner, jid);
 
   const mine = rows
     .filter((r) => r.direction === 'out')
@@ -39,31 +44,39 @@ export async function rebuildProfile(db, jid, { withRelationship = true } = {}) 
     pairs.push({ their, mine: mineText, ts: rows[i].ts });
   }
 
-  db.prepare('DELETE FROM examples WHERE jid = ?').run(jid);
-  for (const p of pairs.slice(-400)) store.addExample(db, { jid, ...p });
+  db.prepare('DELETE FROM examples WHERE owner_id = ? AND jid = ?').run(owner, jid);
+  for (const p of pairs.slice(-400)) store.addExample(db, { ownerId: owner, jid, ...p });
 
   let relationship = null;
-  if (withRelationship && pairs.length >= 8) {
+  const ai = aiConfigForOwner(db, owner);
+  if (withRelationship && pairs.length >= 8 && ai) {
     try {
-      relationship = await generateRelationship({
-        meName: config.me,
-        contactName: contact.name || 'dia',
-        pairs,
-      });
+      relationship = await withAiConfig(ai, () =>
+        generateRelationship({
+          meName: config.me,
+          contactName: contact.name || 'dia',
+          pairs,
+        }),
+      );
     } catch {
       // Jangan gagalkan seluruh proses hanya karena ringkasan relasi.
     }
   }
 
-  store.saveProfile(db, jid, {
-    styleProfile: style,
-    relationship: relationship ?? contact.relationship,
-    sampleCount: mine.length,
-  });
+  store.saveProfile(
+    db,
+    jid,
+    {
+      styleProfile: style,
+      relationship: relationship ?? contact.relationship,
+      sampleCount: mine.length,
+    },
+    owner,
+  );
 
   // Tentukan tingkat tutur kalau belum pernah diset manual.
   if (!contact.register || contact.register === 'auto') {
-    store.setContactRegister(db, jid, detectRegister(mine));
+    store.setContactRegister(db, jid, detectRegister(mine), owner);
   }
 
   return { ok: true, samples: mine.length, pairs: pairs.length };

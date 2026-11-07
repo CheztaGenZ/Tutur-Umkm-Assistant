@@ -30,7 +30,8 @@ const rebuildLocks = new Set();
  * `name` = nama yang kamu simpan di HP (biasanya sama dengan nama di export),
  * `notify` = nama profil yang dipasang orangnya sendiri.
  */
-export function createContactSync({ db, bus }) {
+export function createContactSync({ db, bus, ownerId = 'demo' }) {
+  const store = scopedStore(db, ownerId);
   return function syncContacts(list = []) {
     let linked = 0;
     let repaired = 0;
@@ -82,12 +83,14 @@ export function createContactSync({ db, bus }) {
     if (linked) {
       bus.emit('event', {
         type: 'log',
+        ownerId,
         message: `${linked} kontak hasil import tersambung ke nomor WhatsApp`,
       });
     }
     if (repaired) {
       bus.emit('event', {
         type: 'log',
+        ownerId,
         message: `${repaired} kontak LID diperbarui dari buku kontak`,
       });
     }
@@ -96,7 +99,8 @@ export function createContactSync({ db, bus }) {
 
 /* ------------------------------- riwayat HP ------------------------------- */
 
-export function createHistoryIngest({ db, wa, bus }) {
+export function createHistoryIngest({ db, wa, bus, ownerId = 'demo' }) {
+  const store = scopedStore(db, ownerId);
   const rebuilding = new Set();
 
   return async function ingestHistory(payload = {}) {
@@ -161,6 +165,7 @@ export function createHistoryIngest({ db, wa, bus }) {
 
     bus.emit('event', {
       type: 'log',
+      ownerId,
       message: `Riwayat dari HP: ${stored} pesan baru, ${touched.size} chat`,
     });
 
@@ -169,9 +174,16 @@ export function createHistoryIngest({ db, wa, bus }) {
         if (rebuilding.has(jid)) continue;
         rebuilding.add(jid);
         try {
-          const res = await rebuildProfile(db, jid, { withRelationship: true });
+          const res = await rebuildProfile(db, jid, { withRelationship: true, ownerId });
           if (res.ok) {
-            bus.emit('event', { type: 'ingest', jid, contact: name, samples: res.samples, auto: true });
+            bus.emit('event', {
+              type: 'ingest',
+              ownerId,
+              jid,
+              contact: name,
+              samples: res.samples,
+              auto: true,
+            });
           }
         } catch {
           /* lanjut */
@@ -187,12 +199,63 @@ export function createHistoryIngest({ db, wa, bus }) {
 
 /* ------------------------------ pesan masuk ------------------------------- */
 
-export function createMessageHandler({ db, wa, bus, allowGlobalAi = false }) {
-  const emit = (event) => bus.emit('event', event);
+function scopedStore(db, ownerId) {
+  const owner = String(ownerId || 'demo');
+  return {
+    ...store,
+    getContact: (_db, jid) => store.getContact(db, jid, owner),
+    upsertContact: (_db, data) => store.upsertContact(db, { ...data, ownerId: owner }),
+    findContactByImportName: (_db, name) => store.findContactByImportName(db, name, owner),
+    linkContactJid: (_db, oldJid, newJid, number) =>
+      store.linkContactJid(db, oldJid, newJid, number, owner),
+    listContacts: (_db, q = '') => store.listContacts(db, q, owner),
+    setContactMode: (_db, jid, mode) => store.setContactMode(db, jid, mode, owner),
+    setContactRegister: (_db, jid, register) => store.setContactRegister(db, jid, register, owner),
+    setContactAlias: (_db, jid, alias) => store.setContactAlias(db, jid, alias, owner),
+    setContactLanguage: (_db, jid, language) => store.setContactLanguage(db, jid, language, owner),
+    setContactBurst: (_db, jid, burst) => store.setContactBurst(db, jid, burst, owner),
+    saveProfile: (_db, jid, data) => store.saveProfile(db, jid, data, owner),
+    insertMessage: (_db, data) => store.insertMessage(db, { ...data, ownerId: owner }),
+    updateMessageStatus: (_db, id, status, reason = null) =>
+      store.updateMessageStatus(db, id, status, reason, owner),
+    touchContact: (_db, jid) => store.touchContact(db, jid, owner),
+    recentMessages: (_db, jid, limit = 20) => store.recentMessages(db, jid, limit, owner),
+    countOutSince: (_db, sinceTs, jid = null) => store.countOutSince(db, sinceTs, jid, owner),
+    countOutMessages: (_db, jid) => store.countOutMessages(db, jid, owner),
+    createDraft: (_db, data) => store.createDraft(db, { ...data, ownerId: owner }),
+    getDraft: (_db, id) => store.getDraft(db, id, owner),
+    listDrafts: (_db, status = 'pending') => store.listDrafts(db, status, owner),
+    claimDraft: (_db, id, from, to) => store.claimDraft(db, id, from, to, owner),
+    updateDraft: (_db, id, patch) => store.updateDraft(db, id, patch, owner),
+    clearDrafts: (_db, status = 'pending') => store.clearDrafts(db, status, owner),
+    addExample: (_db, data) => store.addExample(db, { ...data, ownerId: owner }),
+    listExamples: (_db, jid, limit = 12) => store.listExamples(db, jid, limit, owner),
+    countExamples: (_db, jid) => store.countExamples(db, jid, owner),
+    createActivity: (_db, data) => store.createActivity(db, { ...data, ownerId: owner }),
+    getActivity: (_db, id) => store.getActivity(db, id, owner),
+    getActiveActivity: () => store.getActiveActivity(db, owner),
+    listActivities: (_db, limit = 20) => store.listActivities(db, limit, owner),
+    setActivityActive: (_db, id, active) => store.setActivityActive(db, id, active, owner),
+    deactivateAllActivities: () => store.deactivateAllActivities(db, owner),
+    deleteActivity: (_db, id) => store.deleteActivity(db, id, owner),
+    createStatusJob: (_db, data) => store.createStatusJob(db, { ...data, ownerId: owner }),
+    getStatusJob: (_db, id) => store.getStatusJob(db, id, owner),
+    listStatusJobs: (_db, limit = 60) => store.listStatusJobs(db, limit, owner),
+    dueStatusJobs: (_db, at) => store.dueStatusJobs(db, at, owner),
+    claimStatusJob: (_db, id, from) => store.claimStatusJob(db, id, from, owner),
+    logStatusSend: (_db, jobId, sentAt) => store.logStatusSend(db, jobId, sentAt, owner),
+    updateStatusJob: (_db, id, patch) => store.updateStatusJob(db, id, patch, owner),
+    countStatusSentToday: () => store.countStatusSentToday(db, owner),
+  };
+}
+
+export function createMessageHandler({ db, wa, bus, allowGlobalAi = false, ownerId = 'demo' }) {
+  const store = scopedStore(db, ownerId);
+  const emit = (event) => bus.emit('event', { ownerId, ...event });
 
   // Satu nomor WhatsApp per deployment. Akun yang mengklaim nomor ini
   // menjadi pemilik data chat, knowledge, dan pesanan untuk balasan WA.
-  const waOwner = () => store.kvGet(db, 'wa_owner_id') || config.ownerId;
+  const waOwner = () => String(ownerId);
   const waOwnerName = () => {
     const profile = store.getBusinessProfile(db, waOwner());
     if (profile?.name) return profile.name;
@@ -225,7 +288,7 @@ export function createMessageHandler({ db, wa, bus, allowGlobalAi = false }) {
       if (totalOut < 5 || totalOut < base + 20) return;
       if (rebuildLocks.has(jid)) return;
       rebuildLocks.add(jid);
-      rebuildProfile(db, jid)
+      rebuildProfile(db, jid, { ownerId })
         .then(async (res) => {
           if (res.ok) {
             emit({ type: 'ingest', jid, contact: contact.name, samples: res.samples, auto: true });
@@ -501,7 +564,7 @@ export function createMessageHandler({ db, wa, bus, allowGlobalAi = false }) {
     const decision = decide({
       jid,
       contact,
-      paused: store.kvGet(db, 'paused') === '1',
+      paused: store.kvGet(db, `paused:${ownerId}`) === '1',
       counts: {
         day: store.countOutSince(db, dayStart()),
         hour: store.countOutSince(db, hourStart()),
