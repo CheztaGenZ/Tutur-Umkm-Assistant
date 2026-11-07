@@ -182,8 +182,23 @@ CREATE TABLE IF NOT EXISTS business_profiles (
   specialty  TEXT,
   contact    TEXT,
   notes      TEXT,
+  payment_methods TEXT,
+  bank_info  TEXT,
+  qris_image_path TEXT,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS orders (
+  id            TEXT PRIMARY KEY,
+  owner_id      TEXT NOT NULL,
+  customer_name TEXT,
+  items         TEXT NOT NULL,
+  total         INTEGER NOT NULL DEFAULT 0,
+  status        TEXT NOT NULL DEFAULT 'pending',
+  source        TEXT NOT NULL DEFAULT 'chat',
+  created_at    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_owner ON orders(owner_id, created_at);
 
 -- Event playground anonim. Tidak menyimpan isi percakapan.
 CREATE TABLE IF NOT EXISTS playground_events (
@@ -235,6 +250,17 @@ export function openDb(dataDir) {
   const productCols = db.prepare('PRAGMA table_info(products)').all();
   if (!productCols.some((c) => c.name === 'image_path')) {
     db.exec('ALTER TABLE products ADD COLUMN image_path TEXT');
+  }
+
+  const businessCols = db.prepare('PRAGMA table_info(business_profiles)').all();
+  for (const [name, type] of [
+    ['payment_methods', 'TEXT'],
+    ['bank_info', 'TEXT'],
+    ['qris_image_path', 'TEXT'],
+  ]) {
+    if (!businessCols.some((c) => c.name === name)) {
+      db.exec(`ALTER TABLE business_profiles ADD COLUMN ${name} ${type}`);
+    }
   }
 
   const statusCols = db.prepare('PRAGMA table_info(status_jobs)').all();  if (!statusCols.some((c) => c.name === 'wa_message_id')) {
@@ -904,6 +930,9 @@ export function getBusinessProfile(db, ownerId) {
         specialty: row.specialty || '',
         contact: row.contact || '',
         notes: row.notes || '',
+        payment_methods: row.payment_methods || '',
+        bank_info: row.bank_info || '',
+        qris_image_path: row.qris_image_path || '',
         updated_at: row.updated_at,
       }
     : null;
@@ -913,8 +942,9 @@ export function upsertBusinessProfile(db, ownerId, data = {}) {
   const name = String(data.name || '').trim();
   if (!name) throw new Error('Nama usaha wajib diisi');
   db.prepare(
-    `INSERT INTO business_profiles (owner_id, name, category, location, hours, specialty, contact, notes, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO business_profiles
+       (owner_id, name, category, location, hours, specialty, contact, notes, payment_methods, bank_info, qris_image_path, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(owner_id) DO UPDATE SET
        name = excluded.name,
        category = excluded.category,
@@ -923,6 +953,9 @@ export function upsertBusinessProfile(db, ownerId, data = {}) {
        specialty = excluded.specialty,
        contact = excluded.contact,
        notes = excluded.notes,
+       payment_methods = excluded.payment_methods,
+       bank_info = excluded.bank_info,
+       qris_image_path = COALESCE(excluded.qris_image_path, business_profiles.qris_image_path),
        updated_at = excluded.updated_at`,
   ).run(
     String(ownerId),
@@ -933,7 +966,33 @@ export function upsertBusinessProfile(db, ownerId, data = {}) {
     String(data.specialty || '').trim(),
     String(data.contact || '').trim(),
     String(data.notes || '').trim(),
+    String(data.payment_methods || '').trim(),
+    String(data.bank_info || '').trim(),
+    data.qris_image_path || null,
     Date.now(),
   );
   return getBusinessProfile(db, ownerId);
+}
+
+export function createOrder(db, { ownerId, customerName = '', items, total = 0, status = 'pending', source = 'chat' }) {
+  const id = `ord_${Math.random().toString(36).slice(2, 10)}`;
+  db.prepare(
+    'INSERT INTO orders (id, owner_id, customer_name, items, total, status, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  ).run(
+    id,
+    String(ownerId),
+    String(customerName || '').trim(),
+    String(items || '').trim(),
+    Math.max(0, Math.round(Number(total) || 0)),
+    String(status || 'pending'),
+    String(source || 'chat'),
+    Date.now(),
+  );
+  return db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+}
+
+export function listOrders(db, ownerId, limit = 100) {
+  return db
+    .prepare('SELECT * FROM orders WHERE owner_id = ? ORDER BY created_at DESC LIMIT ?')
+    .all(String(ownerId), limit);
 }

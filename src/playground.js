@@ -193,9 +193,27 @@ export function createPlayground({
         latencyMs,
       });
 
+      const profile = store.getBusinessProfile(db, ownerId);
+      let order = null;
+      if (result.order) {
+        order = store.createOrder(db, {
+          ownerId,
+          customerName: result.order.customerName,
+          items: result.order.items,
+          total: result.order.total,
+          source: 'coba-chat',
+        });
+      }
+      const paymentImage =
+        result.attachPayment === 'qris' && profile?.qris_image_path
+          ? profile.qris_image_path
+          : null;
+
       return {
         sessionId: session.id,
         reply: result.reply,
+        order,
+        paymentImage,
         trace: {
           action: decision.action,
           policyReason: decision.reason,
@@ -207,6 +225,8 @@ export function createPlayground({
           model: config.ai.model,
           latencyMs,
           turns: session.turns,
+          orderId: order?.id || null,
+          attachPayment: result.attachPayment || null,
         },
       };
     } catch (err) {

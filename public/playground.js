@@ -236,6 +236,18 @@ async function send() {
     if (data.reply) {
       addBubble('out', data.reply, 'Tutur');
     }
+    if (data.paymentImage) {
+      const el = document.createElement('div');
+      el.className = 'bubble out payment';
+      el.innerHTML = `<span class="who">QRIS</span><img src="${escapeHtml(data.paymentImage)}" alt="Kode QRIS" />`;
+      $('#chat').appendChild(el);
+    }
+    if (data.order) {
+      addBubble(
+        'system',
+        `Pesanan dicatat: ${data.order.customerName || 'tanpa nama'} · ${data.order.items} · Rp${new Intl.NumberFormat('id-ID').format(data.order.total || 0)}`,
+      );
+    }
     if (data.error) {
       addBubble('system', data.error);
     }

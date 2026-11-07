@@ -71,7 +71,37 @@
 
           <div class="field">
             <label for="notes">Catatan lain</label>
-            <textarea id="notes" rows="3" maxlength="600" placeholder="Contoh: Bisa antar radius 5 km, menerima QRIS"></textarea>
+            <textarea id="notes" rows="3" maxlength="600" placeholder="Contoh: Bisa antar radius 5 km"></textarea>
+          </div>
+
+          <fieldset class="field">
+            <legend>Metode pembayaran</legend>
+            <label class="check">
+              <input type="checkbox" id="payCash" />
+              <span>Tunai</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="payQris" />
+              <span>QRIS</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="payBank" />
+              <span>Transfer bank</span>
+            </label>
+          </fieldset>
+
+          <div class="field">
+            <label for="bankInfo">Info rekening bank</label>
+            <input id="bankInfo" type="text" maxlength="200" placeholder="Contoh: BCA 1234567890 a/n Wayan Sari" />
+          </div>
+
+          <div class="field">
+            <label for="qrisImage">Gambar QRIS</label>
+            <input id="qrisImage" type="file" accept="image/*" />
+            <div class="image-preview" id="qrisPreview" hidden>
+              <img id="qrisPreviewImg" alt="Pratinjau QRIS" />
+            </div>
+            <span class="hint">Unggah gambar QRIS milik usaha. Dipakai saat pelanggan bertanya QRIS.</span>
           </div>
 
           <button class="btn btn-primary" type="submit" id="save">Simpan dan buka dashboard</button>

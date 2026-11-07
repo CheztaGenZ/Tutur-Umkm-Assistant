@@ -110,7 +110,6 @@ const EN_WORDS =
 function looksIndonesian(text) {
   return ID_WORDS.test(String(text || ''));
 }
-  /\b(tidak ada|ga ada|gak ada|nggak ada|belum ada|belum punya|tidak tersedia|tidak punya|habis|not available|don't have|do not have|we don't|no such)\b/i;
 
 /** Aturan keselamatan yang tidak boleh bergantung pada kepatuhan model. */
 export function applyIntentGuards({ intent, needsOwner, reply, sources = null }) {
@@ -159,7 +158,7 @@ ${formatKnowledgeBlock(knowledge)}
 `;
 }
 
-const OUTPUT_CONTRACT = `Balas HANYA dengan JSON valid, tanpa markdown:{"reply": "teks balasan" atau null, "confidence": 0.0-1.0, "sticker": "nama file stiker" atau null, "attach_activity": true atau false, "reason": "alasan singkat dalam bahasa Indonesia", "intent": "tanya_fakta|pesanan|booking|komplain|obrolan|spam", "needs_owner": true atau false, "owner_reason": "kenapa perlu pemilik, singkat", "used_sources": ["id sumber yang dipakai"]}`;
+const OUTPUT_CONTRACT = `Balas HANYA dengan JSON valid, tanpa markdown:{"reply": "teks balasan" atau null, "confidence": 0.0-1.0, "sticker": "nama file stiker" atau null, "attach_activity": true atau false, "reason": "alasan singkat dalam bahasa Indonesia", "intent": "tanya_fakta|pesanan|booking|komplain|obrolan|spam", "needs_owner": true atau false, "owner_reason": "kenapa perlu pemilik, singkat", "used_sources": ["id sumber yang dipakai"], "attach_payment": "qris|bank|none", "order_name": "nama pemesan atau kosong", "order_items": "daftar pesanan atau kosong", "order_total": 0}`;
 
 /** Prompt khusus mode demo bisnis: bersih dari aturan personal, fokus fakta. */
 function buildBusinessPrompt({
@@ -199,6 +198,8 @@ function buildBusinessPrompt({
 10. DILARANG memakai frasa: "Ada yang bisa saya bantu", "Tentu", "Dengan senang hati", "Sebagai AI", "Saya adalah asisten", "Saya harap ini membantu", "Jangan ragu", "Mohon maaf atas ketidaknyamanan", "Terima kasih telah menghubungi", "Baik, saya mengerti", "Semoga membantu". DILARANG membuka dengan "Halo" atau "Hai" di setiap balasan.
 11. Jangan memakai bullet, penomoran, tanda seru berlebihan, atau emoji kecuali gaya ngetik pemilik memang memakainya.
 12. Berhenti setelah informasi atau pertanyaan yang perlu. Jangan menambah tawaran, ringkasan, atau kalimat penutup basa-basi.
+13. Kalau pelanggan memesan dan menyebut nama serta item, isi order_name, order_items, dan order_total. Ambil harga hanya dari SUMBER DATA BISNIS. Kalau total tidak bisa dipastikan, isi 0 dan set needs_owner true. Di balasan, sebut nama pemesan, item, dan total yang sudah dicatat. Contoh: "2 nasi campur vegan ya kak, totalnya 70k. sudah aku catat atas nama Budi."
+14. Kalau pelanggan bertanya soal pembayaran, jawab hanya dari SUMBER DATA BISNIS. Sebut metode yang benar-benar tersedia. Kalau transfer disebut di sumber, tulis nama bank, nomor rekening, dan nama pemilik rekening persis seperti di sumber. Kalau QRIS tersedia, bilang bisa QRIS dan gambarnya dikirim. Jangan mengarang nomor rekening atau nama pemilik rekening. Set attach_payment "qris" kalau membahas QRIS, "bank" kalau membahas transfer, selain itu "none".
 ${languageBlock}
 
 ## GAYA NGETIK ${meName.toUpperCase()}
@@ -607,6 +608,18 @@ export async function generateReply({
     finalGuarded.ownerReason = 'Tidak ada sumber data bisnis untuk pertanyaan ini.';
   }
 
+  const attachPayment = ['qris', 'bank'].includes(String(out.attach_payment || '').toLowerCase())
+    ? String(out.attach_payment).toLowerCase()
+    : null;
+  const orderItems = String(out.order_items || '').trim().slice(0, 500);
+  const order = orderItems
+    ? {
+        customerName: String(out.order_name || '').trim().slice(0, 120),
+        items: orderItems,
+        total: Math.max(0, Math.round(Number(out.order_total) || 0)),
+      }
+    : null;
+
   return {
     reply: finalGuarded.reply,
     confidence: finalConfidence,
@@ -617,6 +630,8 @@ export async function generateReply({
     needsOwner: finalGuarded.needsOwner,
     ownerReason: finalGuarded.ownerReason || String(out.owner_reason || '').slice(0, 200),
     knowledgeUsed: validSources,
+    attachPayment,
+    order,
   };
 }
 

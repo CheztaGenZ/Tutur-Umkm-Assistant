@@ -9,6 +9,7 @@ if (nav) {
         <a href="/dashboard">Dashboard</a>
         <a href="/katalog">Katalog</a>
         <a href="/profil-usaha">Profil usaha</a>
+        <a href="/pesanan">Pesanan</a>
         <span class="nav-user">Hai, ${name.replace(/[&<>"']/g, '')}</span>
         <button class="nav-logout" type="button" id="navLogout">Keluar</button>
       `;

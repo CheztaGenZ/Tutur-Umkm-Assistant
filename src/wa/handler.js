@@ -949,6 +949,44 @@ export function createMessageHandler({ db, wa, bus }) {
             }
           }
 
+          if (result.order) {
+            const order = store.createOrder(db, {
+              ownerId: config.ownerId,
+              customerName: result.order.customerName,
+              items: result.order.items,
+              total: result.order.total,
+              source: 'chat',
+            });
+            emit({
+              type: 'order',
+              jid,
+              contact: contact.name,
+              order,
+            });
+          }
+
+          if (result.attachPayment === 'qris') {
+            const profile = store.getBusinessProfile(db, config.ownerId);
+            const rel = String(profile?.qris_image_path || '').replace(/^\/uploads\//, '');
+            const file = path.join(path.resolve(config.dataDir), 'uploads', rel);
+            if (rel && fs.existsSync(file)) {
+              try {
+                await wa.sendImage(jid, file, '');
+                store.insertMessage(db, {
+                  id: `qris_${Date.now()}`,
+                  jid,
+                  direction: 'out',
+                  body: '[gambar QRIS]',
+                  ts: Date.now(),
+                  status: 'auto_sent',
+                  reason: 'pembayaran QRIS',
+                });
+              } catch {
+                /* QRIS opsional */
+              }
+            }
+          }
+
           await sendChosenSticker(jid, contact, result.sticker, { messages: history, reply: result.reply });
           return;
         } catch (err) {

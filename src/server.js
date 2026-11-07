@@ -344,7 +344,22 @@ export function createServer({ db, wa, bus }) {
   app.post('/api/business', (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
     try {
-      const profile = store.upsertBusinessProfile(db, req.user.id, req.body || {});
+      const body = req.body || {};
+      let qrisPath = null;
+      if (body.qrisImage) {
+        const dir = path.join(path.resolve(config.dataDir), 'uploads', 'qris');
+        const saved = saveImage(body.qrisImage, dir, `qris-${req.user.id}`);
+        if (saved) qrisPath = `/uploads/qris/${path.basename(saved)}`;
+      }
+      const paymentMethods = Array.isArray(body.paymentMethods)
+        ? body.paymentMethods.join(', ')
+        : String(body.paymentMethods || '').trim();
+      const profile = store.upsertBusinessProfile(db, req.user.id, {
+        ...body,
+        payment_methods: paymentMethods,
+        bank_info: String(body.bank_info || body.bankInfo || '').trim(),
+        qris_image_path: qrisPath,
+      });
       const owner = req.user.id;
       const facts = [
         ['bisnis-jam', 'jam', 'Jam buka', profile.hours, 'jam buka, open, hours, tutup'],
@@ -352,15 +367,24 @@ export function createServer({ db, wa, bus }) {
         ['bisnis-keunggulan', 'umum', 'Keunggulan', profile.specialty, 'keunggulan, spesial, menu andalan'],
         ['bisnis-kontak', 'umum', 'Kontak', profile.contact, 'kontak, telepon, whatsapp, wa'],
         ['bisnis-catatan', 'umum', 'Catatan usaha', profile.notes, 'catatan, info, kebijakan'],
+        [
+          'bisnis-pembayaran',
+          'kebijakan',
+          'Pembayaran',
+          [profile.payment_methods, profile.bank_info].filter(Boolean).join('. '),
+          'bayar, pembayaran, payment, qris, transfer, bank, tunai, cash',
+        ],
       ];
-      for (const [id, category, title, body, keywords] of facts) {
-        if (!body) continue;
+      for (const [id, category, title, bodyText, keywords] of facts) {
+        const legacy = store.getKnowledge(db, id);
+        if (legacy && legacy.owner_id === owner) store.deleteKnowledge(db, id);
+        if (!bodyText) continue;
         store.upsertKnowledge(db, {
-          id,
+          id: `${id}-${owner}`,
           ownerId: owner,
           category,
           title,
-          body,
+          body: bodyText,
           keywords,
           active: 1,
         });
@@ -369,6 +393,11 @@ export function createServer({ db, wa, bus }) {
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
+  });
+
+  app.get('/api/orders', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    res.json({ orders: store.listOrders(db, req.user.id) });
   });
 
   const startOAuth = (provider) => (req, res) => {
@@ -598,6 +627,9 @@ export function createServer({ db, wa, bus }) {
   });
   app.get('/profil-usaha', (req, res) => {
     res.sendFile(path.join(publicDir, 'profil-usaha.html'));
+  });
+  app.get('/pesanan', (req, res) => {
+    res.sendFile(path.join(publicDir, 'pesanan.html'));
   });
   app.get('/playground.css', (req, res) => {
     res.type('text/css').sendFile(path.join(publicDir, 'playground.css'));

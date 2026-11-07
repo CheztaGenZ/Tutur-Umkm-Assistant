@@ -1,4 +1,27 @@
 const $ = (sel) => document.querySelector(sel);
+let pendingQris = null;
+
+function setQrisPreview(url) {
+  const box = $('#qrisPreview');
+  if (url) {
+    $('#qrisPreviewImg').src = url;
+    box.hidden = false;
+  } else {
+    $('#qrisPreviewImg').removeAttribute('src');
+    box.hidden = true;
+  }
+}
+
+$('#qrisImage').addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingQris = reader.result;
+    setQrisPreview(pendingQris);
+  };
+  reader.readAsDataURL(file);
+});
 
 function alertBox(text, kind = 'error') {
   const el = $('#alert');
@@ -28,6 +51,12 @@ async function boot() {
     $('#specialty').value = p.specialty || '';
     $('#contact').value = p.contact || '';
     $('#notes').value = p.notes || '';
+    const methods = String(p.payment_methods || '').toLowerCase();
+    $('#payCash').checked = methods.includes('tunai');
+    $('#payQris').checked = methods.includes('qris');
+    $('#payBank').checked = methods.includes('transfer') || methods.includes('bank');
+    $('#bankInfo').value = p.bank_info || '';
+    if (p.qris_image_path) setQrisPreview(p.qris_image_path);
     $('#save').textContent = 'Simpan perubahan';
   } catch (err) {
     alertBox(err.message);
@@ -44,7 +73,14 @@ $('#business-form').addEventListener('submit', async (event) => {
     specialty: $('#specialty').value.trim(),
     contact: $('#contact').value.trim(),
     notes: $('#notes').value.trim(),
+    paymentMethods: [
+      $('#payCash').checked ? 'Tunai' : '',
+      $('#payQris').checked ? 'QRIS' : '',
+      $('#payBank').checked ? 'Transfer bank' : '',
+    ].filter(Boolean),
+    bankInfo: $('#bankInfo').value.trim(),
   };
+  if (pendingQris) payload.qrisImage = pendingQris;
   if (!payload.name) return alertBox('Nama usaha wajib diisi.');
   const btn = $('#save');
   btn.disabled = true;

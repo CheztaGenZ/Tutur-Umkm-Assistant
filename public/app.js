@@ -1246,6 +1246,13 @@ function handleEvent(ev) {
     addLog('draft', ev.contact ? `draft untuk ${who} menunggu persetujuan` : 'draft baru menunggu persetujuan');
   else if (ev.type === 'skip')
     addLog('skip', ev.reason ? `${who}: ${ev.reason}` : 'pesan dilewati');
+  else if (ev.type === 'order')
+    addLog(
+      'sent',
+      `pesanan dicatat dari ${who}: ${ev.order?.customerName || 'tanpa nama'} - ${
+        ev.order?.items || ''
+      } (Rp${new Intl.NumberFormat('id-ID').format(ev.order?.total || 0)})`,
+    );
   else if (ev.type === 'error') addLog('error', ev.message || 'Terjadi error');
   else if (ev.type === 'ingest')
     addLog('ingest', ev.contact ? `profil ${who} diperbarui (${ev.samples} pesan)` : 'profil kontak diperbarui');
