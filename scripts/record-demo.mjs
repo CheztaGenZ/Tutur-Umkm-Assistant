@@ -52,7 +52,7 @@ await page.getByRole('button', { name: /Spam \/ promo/i }).click();
 await page.waitForSelector('text=sengaja tidak dibalas', { timeout: 30000 }).catch(() => {});
 await sleep(3000);
 
-await page.setContent(slide('Balasan yang tahu batas.', '28 dari 28 pertanyaan uji benar. Nol harga karangan. Booking dan komplain selalu menjadi draft.', 'tuturku.biz.id · github.com/CheztaGenZ/WhatsApp-Auto-Reply'));
+await page.setContent(slide('Balasan yang tahu batas.', '28 dari 28 pertanyaan uji benar. Nol harga karangan. Booking dan komplain selalu menjadi draft.', 'tuturku.biz.id · github.com/CheztaGenZ/tutur'));
 await sleep(6000);
 
 const video = page.video();

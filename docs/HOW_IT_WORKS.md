@@ -1,4 +1,4 @@
-# How It Works
+﻿# How It Works
 
 This page explains exactly how a WhatsApp message becomes an automatic reply.
 
@@ -35,7 +35,7 @@ The prompt contains:
 - **few-shot examples** of real conversations
 - **memory** of previous conversations
 - **recent messages** in the current chat
-- **current activity** (optional, for “what are you doing?” questions)
+- **current activity** (optional, for â€œwhat are you doing?â€ questions)
 - **safety rules** for family, friends, sensitive topics, and language
 
 ## 5. AI writes a reply
@@ -71,18 +71,18 @@ If a reply is risky or uncertain, it becomes a **draft** instead of being sent.
 
 ## 7. Decide: auto, draft, or skip
 
-- **auto**: confidence is high, mode is `auto`, and guardrails pass → send.
-- **draft**: mode is `draft`, confidence is low, or a safety rule triggers → wait for you.
+- **auto**: confidence is high, mode is `auto`, and guardrails pass â†’ send.
+- **draft**: mode is `draft`, confidence is low, or a safety rule triggers â†’ wait for you.
 - **skip**: no reply is needed, contact is ignored, group/status, or policy blocks it.
 
 ## 8. Send and record
 
 The reply is sent through WhatsApp, then recorded in SQLite:
 
-- `messages` — sent/received history
-- `drafts` — pending, sent, or discarded replies
-- `ai_usage` — token usage per call
-- `status_send_log` — status quota log
+- `messages` â€” sent/received history
+- `drafts` â€” pending, sent, or discarded replies
+- `ai_usage` â€” token usage per call
+- `status_send_log` â€” status quota log
 
 The dashboard receives live events over SSE.
 
@@ -106,3 +106,4 @@ manually until the style and safety look right.
 - Sensitive topics are pushed toward drafts.
 - VIP numbers are never answered.
 - The bot never sends when paused or outside allowed quotas.
+

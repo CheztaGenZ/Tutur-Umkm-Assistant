@@ -1,4 +1,4 @@
-# Security Policy
+﻿# Security Policy
 
 ## Supported versions
 
@@ -8,7 +8,7 @@ Only the latest version on `main` receives security fixes.
 
 Do not open a public issue for a security problem. Use **GitHub Security Advisories**:
 
-<https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/security/advisories/new>
+<https://github.com/CheztaGenZ/tutur/security/advisories/new>
 
 Or contact the repository owner privately.
 
@@ -33,3 +33,4 @@ Please include:
 
 Never attach API keys, WhatsApp sessions, or databases to public issues. Redact phone
 numbers and chat content before reporting a bug.
+

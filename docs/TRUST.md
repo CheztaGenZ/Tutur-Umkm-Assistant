@@ -1,4 +1,4 @@
-# Trust and Transparency
+﻿# Trust and Transparency
 
 This page explains what stays on your machine, what leaves it, and how to verify the bot.
 
@@ -18,10 +18,10 @@ repository contains code and docs only; it does not contain your chats.
 
 Only these external calls happen:
 
-1. **WhatsApp servers** — to send/receive messages and sync your WhatsApp session.
-2. **Your AI provider** — the prompt context (recent messages, style examples,
+1. **WhatsApp servers** â€” to send/receive messages and sync your WhatsApp session.
+2. **Your AI provider** â€” the prompt context (recent messages, style examples,
    relationship card, memory) is sent to generate a reply.
-3. **Optional transcription provider** — only if you configure `AI_TRANSCRIBE_URL`.
+3. **Optional transcription provider** â€” only if you configure `AI_TRANSCRIBE_URL`.
 
 There is no analytics, telemetry, or third-party dashboard.
 
@@ -69,3 +69,4 @@ start creates a fresh database and asks you to link WhatsApp again.
 This is a beta, single-user, self-hosted project. It is not a hosted service, has no
 multi-user authentication, and uses unofficial WhatsApp automation. See
 [ROADMAP.md](ROADMAP.md) for known work remaining.
+

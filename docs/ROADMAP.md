@@ -1,37 +1,39 @@
-# Roadmap
+﻿# Roadmap
 
-## Shipped
+## Shipped in v1.0
 
 - [x] Per-contact modes: auto, draft, ignore
 - [x] Persona from exported chats
 - [x] Local dashboard with live events
-- [x] Multi-provider AI (OpenAI-compatible)
+- [x] Multi-provider AI through OpenAI-compatible endpoints
 - [x] Image and sticker vision
 - [x] Voice transcription
 - [x] Status scheduling and revoke
-- [x] Status privacy fail-closed
 - [x] Local SQLite storage
-- [x] `.txt` / `.zip` import
-- [x] Handler lock queue and AI retry cap
-- [x] LID → PN contact repair
+- [x] `.txt` and `.zip` chat import
+- [x] Email, Google, and Facebook accounts
+- [x] Business profile onboarding
+- [x] Product catalog with image upload and knowledge sync
+- [x] Grounded answers, policy gate, and decision trace
+- [x] Coba Chat judge demo
+- [x] Payment settings, QRIS delivery, and bank details
+- [x] Order capture with done, cancelled, and reopen controls
+- [x] Per-account business profile, catalog, knowledge, and orders
+- [x] 42 security checks and CI
 
 ## Next
 
-- [ ] PIN/token authentication for LAN
-- [ ] Authenticated reverse-proxy support
-- [ ] Draft only the remaining bubbles after a partial send
-- [ ] Atomic cross-contact quota reservation
-- [ ] Media redelivery race fix
-- [ ] SSRF guard for `/api/settings/test`
-- [ ] Rate limits for read APIs, AI, and imports
-- [ ] Video support
-- [ ] Coverage report
+- [ ] Per-account chat history and style training
+- [ ] QRIS image when the owner approves a payment draft
+- [ ] Order notification for the owner
+- [ ] Embeddings or a search index for large catalogs
 - [ ] Formal schema migrations
+- [ ] Test coverage report
+- [ ] Docker image
 
 ## Later
 
-- [ ] Multi-user / SaaS
-- [ ] Postgres/Supabase adapter
-- [ ] Docker image
-- [ ] Desktop app installer
-- [ ] Plugin/provider registry
+- [ ] Postgres adapter for multi-tenant deployments
+- [ ] WhatsApp Cloud API provider
+- [ ] Real customer pilot with a Ubud warung
+- [ ] Desktop installer

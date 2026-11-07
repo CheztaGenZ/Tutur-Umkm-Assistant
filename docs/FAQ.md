@@ -1,16 +1,16 @@
-# FAQ
+﻿# FAQ
 
 ## Do I need Postgres or Supabase?
 
 No. The database is local SQLite at `data/app.db`. No external database server is
 required. Postgres/Supabase only makes sense if the project becomes multi-user or SaaS.
 
-## Why does a contact show up as “Orang” (Person)?
+## Why does a contact show up as â€œOrangâ€ (Person)?
 
 WhatsApp uses LID (`@lid`) for chats and PN (`@s.whatsapp.net`) for phone numbers. If
-the address-book name cannot be resolved, the bot falls back to “Orang”. The latest
+the address-book name cannot be resolved, the bot falls back to â€œOrangâ€. The latest
 version maps LID to PN and repairs old contacts when WhatsApp becomes ready. A few
-contacts may remain “Orang” if their name is missing from `wa_contacts`; rename them
+contacts may remain â€œOrangâ€ if their name is missing from `wa_contacts`; rename them
 from the dashboard.
 
 ## Why does Chrome/Google offer to save the API key as a password?
@@ -71,3 +71,4 @@ npm start
 ```
 
 Check [CHANGELOG.md](../CHANGELOG.md) for breaking changes.
+

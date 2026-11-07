@@ -1,26 +1,28 @@
 {
-  "name": "wa-reply-ai",
-  "version": "0.1.0",
+  "name": "tutur",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Self-hosted WhatsApp auto-reply that learns your typing style, with a local dashboard, SQLite, and OpenAI-compatible AI providers.",
+  "description": "AI WhatsApp concierge for Balinese warungs and homestays. Answers from the business's own data, captures orders, and hands risky messages to the owner.",
   "license": "MIT",
   "author": "Chesta Adabi Naufal",
   "keywords": [
+    "tutur",
     "whatsapp",
+    "ai-concierge",
+    "umkm",
+    "bali",
     "baileys",
-    "auto-reply",
-    "ai",
     "sqlite",
     "self-hosted"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CheztaGenZ/WhatsApp-Auto-Reply.git"
+    "url": "git+https://github.com/CheztaGenZ/tutur.git"
   },
-  "homepage": "https://github.com/CheztaGenZ/WhatsApp-Auto-Reply#readme",
+  "homepage": "https://github.com/CheztaGenZ/tutur#readme",
   "bugs": {
-    "url": "https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/issues"
+    "url": "https://github.com/CheztaGenZ/tutur/issues"
   },
   "engines": {
     "node": ">=22"
@@ -30,6 +32,8 @@
     "dev": "node --watch src/index.js",
     "test": "node scripts/selftest.mjs && node scripts/handler.test.mjs && node scripts/status.test.mjs && node scripts/settings.test.mjs && node scripts/security.test.mjs && node scripts/smoke.mjs && node scripts/knowledge.test.mjs && node scripts/prompt-grounding.test.mjs && node scripts/escalation.test.mjs && node scripts/playground.test.mjs && node scripts/public-api.test.mjs && node scripts/demo-seed.test.mjs && node scripts/ui-escape.test.mjs && node scripts/impact.test.mjs && node scripts/auth.test.mjs && node scripts/products.test.mjs && node scripts/product-image.test.mjs && node scripts/auth-api.test.mjs",
     "test:knowledge": "node scripts/knowledge.test.mjs",
+    "test:security": "node scripts/security.test.mjs",
+    "test:grounding": "node scripts/prompt-grounding.test.mjs",
     "test:playground": "node scripts/playground.test.mjs",
     "test:public-api": "node scripts/public-api.test.mjs",
     "test:demo": "node scripts/demo-seed.test.mjs",

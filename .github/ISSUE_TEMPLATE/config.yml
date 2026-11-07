@@ -1,11 +1,12 @@
-blank_issues_enabled: false
+﻿blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/security/advisories/new
+    url: https://github.com/CheztaGenZ/tutur/security/advisories/new
     about: Report security issues privately.
   - name: FAQ
-    url: https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/blob/main/docs/FAQ.md
+    url: https://github.com/CheztaGenZ/tutur/blob/main/docs/FAQ.md
     about: Check frequently asked questions.
   - name: Documentation
-    url: https://github.com/CheztaGenZ/WhatsApp-Auto-Reply#documentation
+    url: https://github.com/CheztaGenZ/tutur#documentation
     about: Architecture, configuration, and roadmap.
+

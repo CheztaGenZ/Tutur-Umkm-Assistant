@@ -1,4 +1,4 @@
-# Configuration
+﻿# Configuration
 
 All settings are read from `.env`. Start from `.env.example`.
 
@@ -11,7 +11,7 @@ All settings are read from `.env`. Start from `.env.example`.
 | `AI_MODEL` | `deepseek-flash` | Text model |
 | `AI_VISION_MODEL` | empty | Image/video model; empty = use text model |
 | `AI_THINKING` | `off` | `off`, `on`, `auto` (use `auto` for non-DeepSeek providers) |
-| `AI_TEMPERATURE` | `1.0` | 0–2 |
+| `AI_TEMPERATURE` | `1.0` | 0â€“2 |
 | `AI_MAX_TOKENS` | `2000` | Output limit |
 | `AI_TIMEOUT_MS` | `20000` | Per-attempt timeout |
 | `AI_REASONING_EFFORT` | `low` | DeepSeek reasoning effort when thinking is on |
@@ -64,3 +64,4 @@ All settings are read from `.env`. Start from `.env.example`.
 | `AI_TRANSCRIBE_URL` | empty | Online transcription endpoint |
 | `AI_TRANSCRIBE_KEY` | empty | Online transcription key |
 | `AI_TRANSCRIBE_MODEL` | `whisper-1` | Online transcription model |
+

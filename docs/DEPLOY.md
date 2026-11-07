@@ -1,4 +1,4 @@
-# Deploy Tutur for judging
+﻿# Deploy Tutur for judging
 
 Tutur needs a Node process and a real disk because SQLite writes to a file. Do
 not use a host with an ephemeral filesystem unless you accept that the demo
@@ -108,3 +108,4 @@ Set `PUBLIC_BASE_URL` to the public origin so callbacks match exactly.
 | Demo resets after deploy | No persistent disk | Attach a disk and set `DATA_DIR` to its mount path |
 | Playground says "AI gagal" | Missing or invalid key, or provider timeout | Check logs, test with `node scripts/test-ai.mjs` |
 | WhatsApp QR appears in demo | `DEMO_MODE` not set to 1 | Set it and redeploy |
+

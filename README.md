@@ -1,196 +1,235 @@
-# Tutur
+<div align="center">
+  <img src="docs/assets/tutur-banner.svg" alt="Tutur, AI WhatsApp concierge for Balinese warungs and homestays" width="100%" />
 
-AI concierge for Balinese warungs and homestays. It answers customer chat the way
-the owner writes, uses only the business's own data for prices and hours, and
-holds back when a human should decide.
+  <p>
+    <a href="https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml"><img alt="CI" src="https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml/badge.svg" /></a>
+    <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2f6b4f" /></a>
+    <img alt="Node.js 22+" src="https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white" />
+    <img alt="Version v1.0.0" src="https://img.shields.io/badge/version-v1.0.0-a94b25" />
+    <img alt="WhatsApp unofficial" src="https://img.shields.io/badge/WhatsApp-unofficial-25D366?logo=whatsapp&logoColor=white" />
+  </p>
 
-**Competition:** Bali DigiFest 2026, AI Web Innovation Challenge
-**Category:** Mahasiswa/Umum
-**Version:** v1.0-submission
+  <p>
+    <a href="https://tuturku.biz.id/coba"><strong>Live demo</strong></a> ·
+    <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+    <a href="docs/eval-results.md">Evaluation</a> ·
+    <a href="docs/DEPLOY.md">Deployment</a> ·
+    <a href="README.id.md">Bahasa Indonesia</a>
+  </p>
+</div>
 
-- Coba Chat: `/coba` on the deployment URL
-- No login required for Coba Chat
-- Dashboard access uses an admin token provided to the judges
+Tutur is a WhatsApp concierge for small Balinese businesses. It answers customer questions from the owner's own menu, hours, location, and payment data, writes incoming orders into a dashboard, and stops before booking, allergy, complaint, or price-sensitive messages reach the customer without the owner's approval.
 
-## Problem and target user
+The project was built for **Bali DigiFest 2026, AI Web Innovation Challenge**, category Mahasiswa/Umum. The submitted version is tagged `v1.0-submission`.
 
-A warung or homestay in Ubud receives messages in Indonesian and English at
-hours when the owner is cooking, driving, or asleep. Quick replies cannot answer
-"do you have vegan options" or "can I book a table for six". A generic chatbot
-invents prices, confirms tables that do not exist, and annoys the owner with
-questions they did not need to see.
+## The problem
 
-Target user: the owner of a small hospitality business with 1 to 10 staff, no
-dedicated customer service team, and WhatsApp as the main channel.
+A warung or homestay in Ubud gets messages in Indonesian and English while the owner is cooking, driving, or asleep. Quick replies cannot answer "do you have vegan options" or "can I pay with QRIS". A general chatbot invents prices and confirms tables that do not exist.
 
-## Accounts and product catalog
+Tutur keeps the answer inside the business data. When the data is missing, it says it will check with the owner.
 
-Owners can create an account with email and password, or sign in with Google and
-Facebook. The account stores the business knowledge base and the product
-catalog, so the menu does not need to be filled in again on the next visit.
+## Inside the product
 
-The catalog lives at `/katalog`. Every product saved there is written into the
-knowledge base automatically, so the AI answers price and availability
-questions from the same data. Deleting or updating a product updates the AI
-source in the same step.
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/demo/tutur-landing.jpg" alt="Tutur landing page" />
+      <br /><sub>Public landing page. The judge demo needs no account.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/demo/tutur-coba-chat.jpg" alt="Coba Chat with a QRIS reply and decision trace" />
+      <br /><sub>Coba Chat: grounded QRIS reply, payment image, and the decision trace.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/demo/tutur-orders.jpg" alt="Orders captured from chat" />
+      <br /><sub>Orders captured from chat, with status controls for the owner.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/demo/tutur-katalog.jpg" alt="Product catalog" />
+      <br /><sub>One product catalog feeds the website and the AI knowledge base.</sub>
+    </td>
+  </tr>
+</table>
 
-OAuth needs provider credentials. Without them the buttons explain that the
-provider is not configured yet and email login still works. Setup steps are in
-`docs/DEPLOY.md`.
+## What it does
 
-## What Tutur does
+| Capability | Behavior |
+|---|---|
+| Grounded answers | Prices, hours, menu, location, and payment details come from the owner's knowledge base. Missing facts become a draft, never a guess. |
+| Owner voice | The style engine learns message length, casing, slang, and emoji habits from an exported chat. |
+| Order capture | When a customer names items, Tutur writes the order to `/pesanan` with the customer name, items, and total. The owner can mark it done or cancelled. |
+| Payment delivery | The owner sets cash, QRIS, and bank transfer. A QRIS question returns the owner's QR image; a transfer question returns the saved bank details. |
+| Human handoff | Booking, order, complaint, and allergy messages become drafts. Spam is ignored. VIP contacts are never auto-replied. |
+| Decision trace | Every Coba Chat reply shows the policy verdict, intent, confidence, cited business data, model, and latency. |
+| Multi-account workspace | Email/password, Google, and Facebook sign-in. Each account has its own business profile, catalog, knowledge, and orders. |
 
-1. **Writes like the owner.** The style engine learns message length, casing,
-   slang, and emoji habits from a chat export.
-2. **Answers from the business data.** Prices, opening hours, menu, location,
-   and policy come from a knowledge base. If the answer is not there, Tutur says
-   it will check with the owner instead of inventing it.
-3. **Knows when to stay quiet.** Booking, order, complaint, and allergy messages
-   always become a draft for the owner. Spam is ignored. VIP numbers are never
-   answered automatically.
-4. **Shows its reasoning.** The Coba Chat returns a decision trace:
-   policy verdict, confidence, message intent, business sources, model, and
-   response time.
+## How it works
 
-## Coba Chat
+```text
+Customer message
+      |
+      v
+Intent and risk checks  ->  spam: ignore
+      |
+      v
+Knowledge retrieval (SQLite)
+      |
+      v
+AI generation (OpenAI-compatible)
+      |
+      v
+Policy gate  ->  auto send / draft / ignore
+      |
+      +--> WhatsApp reply, QRIS image, order record
+      |
+      +--> Dashboard draft queue and decision trace
+```
 
-Open `/coba`. Pick a customer role, send a message in Indonesian or
-English, and read the trace panel.
-
-Preset scenarios: price question, table booking, opening hours, an unknown fact,
-a complaint, and spam. Each one triggers a different policy outcome on purpose.
-
-Coba Chat calls the same `generateReply` and `decide` functions that the
-WhatsApp transport uses. The only difference is the entrance: HTTP instead of a
-WhatsApp socket. No mock data is hardcoded into the answer.
+The same `generateReply` and `decide` functions run behind the WhatsApp transport and behind Coba Chat. The web demo is not a mock.
 
 ## AI implementation
 
-| Part | How it works |
+| Part | Implementation |
 |---|---|
-| Grounding | Query tokens are matched against the knowledge base (title, keywords, body). The top 3 rows are injected into the system prompt as the only allowed source of facts |
-| Generation | OpenAI-compatible chat completion. Default: DeepSeek `deepseek-chat`. Also supports Gemini, OpenAI, OpenRouter, Groq, and Ollama through settings |
-| Intent | The model returns `intent` and `needs_owner`. A deterministic keyword guard also catches booking, order, and complaint messages when the model mislabels them |
-| Policy | `src/policy.js` decides auto, draft, or ignore. Escalation always wins over auto. Spam is ignored even for a new contact |
-| Style | `src/ai/prompt.js` builds a persona from the owner's real messages, plus relationship context and few-shot examples |
-| Vision and voice | Optional image understanding and local Whisper transcription for voice notes |
+| Retrieval | Query tokens are matched against knowledge titles, keywords, and bodies. The top three rows become the only allowed source of facts. |
+| Generation | OpenAI-compatible chat completion. Default is DeepSeek `deepseek-chat`. The settings page also supports OpenAI, Gemini, OpenRouter, Groq, and Ollama. |
+| Intent guard | The model returns `intent` and `needs_owner`. A deterministic keyword guard also catches booking, order, and complaint messages if the model mislabels them. |
+| Policy | `src/policy.js` chooses auto, draft, or ignore. Escalation wins over auto. Spam is ignored even for a new contact. |
+| Language | Indonesian and English replies are enforced from the customer's language. |
+| Vision and voice | Optional image understanding and local transcription for voice notes. |
 
 ### Evaluation
 
-`npm run eval` runs 28 questions twice: once without the knowledge base, once
-with retrieval. Results are written to [docs/eval-results.md](docs/eval-results.md).
+`npm run eval` runs 28 questions twice: once without the knowledge base and once with retrieval. The automated keyword check writes its result to [docs/eval-results.md](docs/eval-results.md).
 
-Latest run with `deepseek-chat`:
-
-| Metric | Without KB | Tutur |
-|---|---|---|
+| Metric | Without knowledge base | Tutur |
+|---|---:|---:|
 | Correct answers | 13/28 | 28/28 |
-| Invented prices on missing facts | - | 0 |
+| Invented prices on missing facts | not measured | 0 |
 
-These numbers come from the included test set and an automated keyword check,
-not from a human panel. The method is described in the result file.
+These are results from the included test set, not a human panel. The method and limitations are documented in the result file.
 
-## Architecture
+## Stack
 
-```text
-Customer (playground or WhatsApp)
-        |
-        v
-  policy gate  ->  ignore
-        |
-        v
-  knowledge retrieval (SQLite)
-        |
-        v
-  AI generation (OpenAI-compatible)
-        |
-        v
-  auto / draft / ignore + decision trace
-        |
-        v
-  dashboard, draft queue, impact metrics
-```
-
-| Layer | Technology |
+| Layer | Choice |
 |---|---|
 | Runtime | Node.js 22 or newer |
 | HTTP | Express 4 |
 | Database | SQLite through `node:sqlite` |
-| AI | OpenAI-compatible endpoint (`deepseek-chat` by default) |
-| Frontend | Plain HTML, CSS, and ES modules. No build step |
-| WhatsApp transport | Baileys, disabled during judging |
+| AI | OpenAI-compatible endpoint, DeepSeek by default |
+| Frontend | Plain HTML, CSS, and ES modules. No build step. |
+| WhatsApp | Baileys, disabled during judging |
 | Hosting | Any Node host with a persistent disk |
 
-## Run locally
+## Quick start
 
 ```bash
+git clone https://github.com/CheztaGenZ/tutur.git
+cd tutur
 cp .env.example .env
-# fill AI_API_KEY and AI_MODEL
+# set AI_API_KEY and AI_MODEL in .env
 npm install
 npm start
 ```
 
-Open `http://localhost:3000` for the dashboard and
-`http://localhost:3000/coba` for the judge demo.
+Open `http://localhost:3000` for the dashboard and `http://localhost:3000/coba` for the no-login demo.
 
-Demo mode:
+### Demo mode
 
 ```bash
-DEMO_MODE=1 WA_DISABLED=1 ADMIN_TOKEN=change-me npm start
+DEMO_MODE=1 ADMIN_TOKEN=change-me npm start
 ```
 
-`DEMO_MODE=1` seeds the Sari Kitchen demo, disables WhatsApp, uses the business
-prompt, and requires `ADMIN_TOKEN` for dashboard APIs. Coba Chat stays
-public and rate limited.
+Demo mode seeds the Sari Kitchen dataset, turns WhatsApp off, and keeps Coba Chat public with rate limiting. Dashboard APIs then accept the `ADMIN_TOKEN` value.
+
+Windows users can run `copy .env.example .env` instead of `cp`.
+
+### Configuration
+
+| Variable | Purpose |
+|---|---|
+| `AI_API_KEY` | Provider key. Required for AI replies. |
+| `AI_BASE_URL` | OpenAI-compatible base URL. |
+| `AI_MODEL` | Text model name. |
+| `PORT` | HTTP port, default `3000`. |
+| `DATA_DIR` | SQLite, uploads, and session data. Needs a persistent disk. |
+| `BIND_HOST` | Default `127.0.0.1`. Change only behind a trusted proxy. |
+| `DEMO_MODE` | `1` seeds the demo dataset and disables WhatsApp. |
+| `ADMIN_TOKEN` | Dashboard token for demo deployments. |
+
+The full list is in [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ## Tests
 
 ```bash
-npm test      # unit, integration, security, and smoke tests
-npm run eval  # 20-question grounded answer evaluation (needs an AI key)
+npm test
 ```
 
-## Deployment
+The suite covers the handler, status scheduling, settings, security, prompt grounding, playlist decisions, public API, demo seed, auth, products, and account isolation. It uses a temporary database and a fake WhatsApp client, so no WhatsApp account or real API key is needed.
 
-See [docs/DEPLOY.md](docs/DEPLOY.md). The current target is a Node web service
-with a persistent disk mounted at the data directory. SQLite needs real disk, not
-an ephemeral filesystem.
+Additional checks:
+
+```bash
+node scripts/security.test.mjs        # 42 security checks
+node scripts/prompt-grounding.test.mjs
+npm run eval                          # needs a live AI key
+```
+
+CI runs `npm test` on every push and pull request through [.github/workflows/test.yml](.github/workflows/test.yml).
+
+## Project layout
+
+```text
+src/
+  ai/           prompt, model client, vision, memory, usage
+  wa/           Baileys transport, handler, status worker
+  ingest/       chat export import and style extraction
+  demo/         Sari Kitchen seed data and personas
+  server.js     Express routes, auth, dashboard, public demo
+  db.js         SQLite schema and data access
+  policy.js     auto, draft, and ignore decisions
+public/         landing page, dashboard, catalog, orders, Coba Chat
+docs/           architecture, configuration, deployment, evaluation
+scripts/        tests, evaluation, import, and diagnostic CLIs
+evals/          grounded answer question set
+proposal/       Bali DigiFest submission documents
+```
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | Request flow, modules, and data model |
+| [How it works](docs/HOW_IT_WORKS.md) | Retrieval, policy, and reply pipeline |
+| [Configuration](docs/CONFIGURATION.md) | Environment variables and provider setup |
+| [Deployment](docs/DEPLOY.md) | cPanel, Render, OAuth, and persistent disk |
+| [Evaluation](docs/eval-results.md) | Dataset, method, and results |
+| [Security](SECURITY.md) | Reporting and deployment boundaries |
+| [Roadmap](docs/ROADMAP.md) | Known gaps and next work |
 
 ## Known limitations
 
-- WhatsApp transport is disabled for judging to avoid account risk. The web
-  Coba Chat exercises the same AI and policy code.
-- Accounts isolate the product catalog and business knowledge. Chat history and
-  typing-style training still use one workspace in this MVP, so they are not yet
-  separated per account.
-- Retrieval is keyword based. It handles the demo knowledge base well, but a
-  larger catalogue needs embeddings or a proper search index.
-- SQLite suits a single-tenant deployment. Multi-tenant SaaS would need Postgres.
-- The evaluation set has 28 questions and uses keyword scoring. It is a signal,
-  not a benchmark.
-- No real customer pilot yet. Impact numbers on Coba Chat are labeled as
-  simulation plus live session data.
+- WhatsApp transport is disabled during judging to avoid account risk. Coba Chat exercises the same AI and policy code.
+- Chat history and style training still share one workspace. Business profiles, catalogs, knowledge, and orders are isolated per account.
+- Retrieval is keyword based. A larger catalog will need embeddings or a search index.
+- SQLite fits a single-tenant deployment. Multi-tenant SaaS would need Postgres.
+- The evaluation set has 28 questions and uses keyword scoring. It is a signal, not a benchmark.
+- There is no real customer pilot yet. Impact figures on Coba Chat combine a 30-day simulation with live session data.
 
-## Pre-existing work
+## Background and disclosure
 
-Tutur builds on the author's earlier project, WA Reply AI. The disclosure is in
-[PRE-EXISTING.md](PRE-EXISTING.md). The repository history and the commit dates
-show what existed before the competition and what was built for this submission.
+Tutur builds on the author's earlier WhatsApp auto-reply project. The competition work, pre-existing components, and AI assistance are disclosed in [PRE-EXISTING.md](PRE-EXISTING.md) and [AI-TECHNOLOGY-DISCLOSURE.md](AI-TECHNOLOGY-DISCLOSURE.md).
 
-## Third-party resources
+## Author
 
-See [AI-TECHNOLOGY-DISCLOSURE.md](AI-TECHNOLOGY-DISCLOSURE.md) and
-[docs/LEGACY-README.md](docs/LEGACY-README.md) for the original project notes.
-
-Landing photo: "Nasi campur as art, Ubud, Indonesia" by Vyacheslav Argenberg,
-licensed CC BY 4.0, via Wikimedia Commons. Gallery photos: Gunawan Kartapranata
-(CC BY-SA 3.0), Crisco 1492 (CC BY-SA 3.0), mararie (CC BY-SA 2.0), via
-Wikimedia Commons.
-
-## Team
-
-Filled by the team before submission. See `proposal/README.md`.
+Chesta Adabi Naufal. Built for Bali DigiFest 2026, AI Web Innovation Challenge.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Photo credits
+
+Landing photo: "Nasi campur as art, Ubud, Indonesia" by Vyacheslav Argenberg, CC BY 4.0, via Wikimedia Commons. Gallery photos: Gunawan Kartapranata (CC BY-SA 3.0), Crisco 1492 (CC BY-SA 3.0), mararie (CC BY-SA 2.0), via Wikimedia Commons.

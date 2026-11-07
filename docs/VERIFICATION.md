@@ -1,4 +1,4 @@
-# Verification
+﻿# Verification
 
 This page lists what is actually tested, what is demonstrated, and what is not covered.
 
@@ -22,7 +22,7 @@ npm test
 
 The GitHub Actions workflow runs `npm test` on every push and pull request:
 
-<https://github.com/CheztaGenZ/WhatsApp-Auto-Reply/actions/workflows/test.yml>
+<https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml>
 
 Latest `main` result: **success**.
 
@@ -45,7 +45,7 @@ Covered visually:
 Be clear about the boundary:
 
 - No end-to-end test against a real WhatsApp account in CI.
-- No automated quality score for “sounds like me”; style quality is subjective.
+- No automated quality score for â€œsounds like meâ€; style quality is subjective.
 - Voice transcription is exercised only as a skip path in tests unless local/online
   transcription is configured.
 - Video input is not implemented yet; images and stickers are.
@@ -55,3 +55,4 @@ Be clear about the boundary:
 
 The screenshots/video were generated from a demo database and a fake WhatsApp client.
 The public repository does not include any personal data.
+

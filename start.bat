@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0"
-title WA Reply AI
+title Tutur
 
 if not exist .env (
   copy .env.example .env >nul

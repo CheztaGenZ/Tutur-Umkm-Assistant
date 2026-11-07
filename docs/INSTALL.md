@@ -1,4 +1,4 @@
-# Installation
+﻿# Installation
 
 This guide is for a fresh machine. The app stores everything locally; no database
 provider is required.
@@ -15,14 +15,14 @@ provider is required.
 ### Option A: Git
 
 ```bash
-git clone https://github.com/CheztaGenZ/WhatsApp-Auto-Reply.git
-cd WhatsApp-Auto-Reply
+git clone https://github.com/CheztaGenZ/tutur.git
+cd tutur
 ```
 
 ### Option B: ZIP
 
 1. Open the repository page.
-2. Click **Code → Download ZIP**.
+2. Click **Code â†’ Download ZIP**.
 3. Extract the ZIP.
 4. Open a terminal in the extracted folder.
 
@@ -84,7 +84,7 @@ npm start
 You should see:
 
 ```text
-WA Reply AI
+Tutur
 Dashboard : http://localhost:3000
 Bind      : 127.0.0.1
 ```
@@ -94,7 +94,7 @@ Open <http://localhost:3000>.
 ## 6. Link WhatsApp
 
 1. Open WhatsApp on your phone.
-2. Go to **Linked devices → Link a device**.
+2. Go to **Linked devices â†’ Link a device**.
 3. Scan the QR code shown in the dashboard.
 
 Use a spare number if possible. Automation is unofficial and carries a ban risk.
@@ -143,7 +143,7 @@ Check:
 - `AI_API_KEY` and `AI_MODEL` are correct
 - dashboard log for `AI HTTP`, `429`, `402`, or `AI gagal`
 
-### Contact shows as “Orang”
+### Contact shows as â€œOrangâ€
 
 WhatsApp uses LID (`@lid`) for chats and PN (`@s.whatsapp.net`) for phone numbers.
 The app maps and repairs these automatically. If one remains unnamed, rename it from
@@ -170,3 +170,4 @@ BIND_HOST=0.0.0.0
 
 Then open `http://<PC-IP>:3000` from the phone. This is read-only for most data. Do not
 expose it to the internet without VPN/PIN/auth proxy. See [SECURITY.md](../SECURITY.md).
+
