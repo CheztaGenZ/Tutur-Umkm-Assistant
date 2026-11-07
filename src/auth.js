@@ -138,6 +138,26 @@ export function deleteSession(db, token) {  if (!token) return false;
   return db.prepare('DELETE FROM sessions WHERE id = ?').run(id).changes > 0;
 }
 
+export function updateUserName(db, userId, name) {
+  const cleanName = String(name || '').trim().slice(0, 80);
+  if (cleanName.length < 2) throw new Error('Nama minimal 2 karakter');
+  db.prepare('UPDATE users SET name = ? WHERE id = ?').run(cleanName, String(userId));
+  return findUserById(db, userId);
+}
+
+export function changePassword(db, userId, currentPassword, newPassword) {
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(String(userId));
+  if (!row) throw new Error('Akun tidak ditemukan');
+  if (!row.password_hash) throw new Error('Akun ini memakai login Google atau Facebook.');
+  if (!verifyPassword(currentPassword, row.password_hash)) {
+    throw new Error('Password lama salah.');
+  }
+  const next = String(newPassword || '');
+  if (next.length < 8) throw new Error('Password baru minimal 8 karakter');
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(next), String(userId));
+  return true;
+}
+
 export function acceptTerms(db, userId) {
   db.prepare('UPDATE users SET terms_accepted_at = ? WHERE id = ?').run(Date.now(), String(userId));
   return findUserById(db, userId);

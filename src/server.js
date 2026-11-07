@@ -30,6 +30,8 @@ import {
   deleteSession,
   upsertOAuthUser,
   acceptTerms,
+  updateUserName,
+  changePassword,
 } from './auth.js';
 import * as products from './products.js';
 import { aiConfigForOwner, aiInfoForOwner } from './ai/account.js';
@@ -207,12 +209,15 @@ export function createServer({ db, wa, bus }) {
   app.get('/api/public/playground/state', (req, res) => {
     res.set('Cache-Control', 'no-store');
     const profile = req.user ? store.getBusinessProfile(db, req.user.id) : null;
+    const personal = Boolean(req.user);
     res.json({
-      personal: Boolean(profile),
+      personal,
       business: {
-        name: profile?.name || config.demo.businessName,
-        tagline: profile?.specialty || DEMO_BUSINESS.tagline,
-        location: profile?.location || DEMO_BUSINESS.location,
+        name: profile?.name || (req.user ? req.user.name : config.demo.businessName),
+        tagline:
+          profile?.specialty ||
+          (req.user ? 'Lengkapi profil usaha agar jawaban memakai data Anda.' : DEMO_BUSINESS.tagline),
+        location: profile?.location || (req.user ? '' : DEMO_BUSINESS.location),
       },
       personas: DEMO_PERSONAS.map(({ jid, name, label, language, mode }) => ({
         jid,
@@ -342,6 +347,26 @@ export function createServer({ db, wa, bus }) {
     if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
     const user = acceptTerms(db, req.user.id);
     res.json({ user: publicUser(user) });
+  });
+
+  app.patch('/api/public/auth/profile', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    try {
+      const user = updateUserName(db, req.user.id, req.body?.name);
+      res.json({ user: publicUser(user) });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/public/auth/password', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    try {
+      changePassword(db, req.user.id, req.body?.currentPassword, req.body?.newPassword);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   /* ---------------------------- profil usaha ------------------------------- */
@@ -684,6 +709,9 @@ export function createServer({ db, wa, bus }) {
   });
   app.get('/profil-usaha', (req, res) => {
     res.sendFile(path.join(publicDir, 'profil-usaha.html'));
+  });
+  app.get('/profil-akun', (req, res) => {
+    res.sendFile(path.join(publicDir, 'profil-akun.html'));
   });
   app.get('/pesanan', (req, res) => {
     res.sendFile(path.join(publicDir, 'pesanan.html'));

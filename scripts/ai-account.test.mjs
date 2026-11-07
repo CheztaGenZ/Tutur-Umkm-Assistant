@@ -57,6 +57,26 @@ const settingsA = await (await fetch(`${base}/api/settings`, { headers: { cookie
 assert.equal(settingsA.account, true);
 assert.equal(settingsA.hasApiKey, false);
 
+// Nama akun bisa diubah dan password bisa diganti.
+const renamed = await fetch(`${base}/api/public/auth/profile`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', cookie: cookieA },
+  body: JSON.stringify({ name: 'Nama Baru' }),
+});
+assert.equal(renamed.status, 200);
+assert.equal((await renamed.json()).user.name, 'Nama Baru');
+const changed = await post(
+  '/api/public/auth/password',
+  { currentPassword: 'rahasia123', newPassword: 'rahasia456' },
+  cookieA,
+);
+assert.equal(changed.status, 200);
+const relogin = await post('/api/public/auth/login', {
+  email: 'ai-a@example.com',
+  password: 'rahasia456',
+});
+assert.equal(relogin.status, 200);
+
 // Simpan key milik akun A.
 const saved = await fetch(`${base}/api/settings`, {
   method: 'PUT',

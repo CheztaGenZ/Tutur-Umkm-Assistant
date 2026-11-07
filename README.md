@@ -65,6 +65,7 @@ Tutur keeps the answer inside the business data. When the data is missing, it sa
 | Decision trace | Every Coba Chat reply shows the policy verdict, intent, confidence, cited business data, model, and latency. |
 | Multi-account workspace | Email/password, Google, and Facebook sign-in. Each account has its own business profile, catalog, knowledge, orders, and AI provider settings. |
 | Account AI keys | Each signed-in account saves its own provider key in Setting. The server key is used only for the public demo and admin access. |
+| Account profile | Owners can change their display name and password from `/profil-akun`. Business details stay on `/profil-usaha`. |
 
 ## How it works
 

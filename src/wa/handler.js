@@ -193,7 +193,12 @@ export function createMessageHandler({ db, wa, bus, allowGlobalAi = false }) {
   // Satu nomor WhatsApp per deployment. Akun yang mengklaim nomor ini
   // menjadi pemilik data chat, knowledge, dan pesanan untuk balasan WA.
   const waOwner = () => store.kvGet(db, 'wa_owner_id') || config.ownerId;
-  const waOwnerName = () => store.getBusinessProfile(db, waOwner())?.name || config.me;
+  const waOwnerName = () => {
+    const profile = store.getBusinessProfile(db, waOwner());
+    if (profile?.name) return profile.name;
+    const user = db.prepare('SELECT name FROM users WHERE id = ?').get(String(waOwner()));
+    return user?.name || config.me;
+  };
   const resolveAi = () => (allowGlobalAi ? config.ai : aiConfigForOwner(db, waOwner()));
 
   async function withLock(jid, fn) {

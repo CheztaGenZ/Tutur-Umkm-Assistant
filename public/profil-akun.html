@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+    <title>Profil akun - Tutur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/auth.css" />
+  </head>
+  <body>
+    <main class="auth-shell" style="max-width: 720px">
+      <a class="brand" href="/">
+        <span class="brand-mark">T</span>
+        <span>
+          <strong>Tutur</strong>
+          <small>Profil akun</small>
+        </span>
+      </a>
+
+      <section class="card">
+        <h1>Profil akun</h1>
+        <p class="lede">Ubah nama yang tampil di dashboard, atau ganti password akun.</p>
+
+        <div class="alert" id="alert" hidden></div>
+
+        <form id="profile-form">
+          <div class="field">
+            <label for="name">Nama</label>
+            <input id="name" type="text" required maxlength="80" placeholder="Contoh: Wayan Sari" />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" readonly />
+            <span class="hint">Email dipakai untuk login dan tidak bisa diubah di sini.</span>
+          </div>
+          <button class="btn btn-primary" type="submit" id="save-name">Simpan nama</button>
+        </form>
+
+        <hr style="border: 0; border-top: 1px solid var(--line); margin: 22px 0" />
+
+        <h2>Ganti password</h2>
+        <form id="password-form">
+          <div class="field">
+            <label for="currentPassword">Password lama</label>
+            <input id="currentPassword" type="password" autocomplete="current-password" required />
+          </div>
+          <div class="field">
+            <label for="newPassword">Password baru</label>
+            <input id="newPassword" type="password" autocomplete="new-password" required minlength="8" />
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Ulangi password baru</label>
+            <input id="confirmPassword" type="password" autocomplete="new-password" required minlength="8" />
+          </div>
+          <button class="btn btn-primary" type="submit" id="save-password">Ganti password</button>
+        </form>
+
+        <p class="switch"><a href="/profil-usaha">Edit profil usaha</a></p>
+        <p class="switch"><a href="/dashboard">Kembali ke dashboard</a></p>
+      </section>
+    </main>
+
+    <script type="module" src="/profil-akun.js"></script>
+  </body>
+</html>

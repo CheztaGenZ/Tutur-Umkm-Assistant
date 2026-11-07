@@ -34,6 +34,9 @@ Tutur, the Bali DigiFest 2026 submission.
 - API keys for accounts are encrypted at rest with a local secret.
 - New WhatsApp contacts start in auto mode. Risky messages still become drafts.
 - AI calls fail closed when the account has no valid key instead of borrowing the server key.
+- Account profile page at `/profil-akun` for changing display name and password, with back links to dashboard and business profile.
+- Dashboard adds Beranda, Profil usaha, and Profil akun navigation.
+- Logged-in Coba Chat uses the account name instead of the demo Sari Kitchen name when the business profile is incomplete.
 
 ### Security
 
