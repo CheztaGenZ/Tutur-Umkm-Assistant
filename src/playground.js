@@ -33,7 +33,7 @@ export function createPlayground({
   generateReply = defaultGenerateReply,
   decide = defaultDecide,
   now = Date.now,
-  ownerId = 'demo',
+  ownerId: defaultOwnerId = 'demo',
 }) {
   const sessions = new Map();
   const buckets = new Map();
@@ -106,7 +106,7 @@ export function createPlayground({
     };
   }
 
-  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto' } = {}) {
+  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto', ownerId = defaultOwnerId } = {}) {
     const text = String(message || '').trim();
     if (!text) return { sessionId: null, reply: null, error: 'Pesan wajib diisi' };
     if (text.length > MAX_MESSAGE_CHARS)

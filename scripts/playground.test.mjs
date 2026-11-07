@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { openDb, upsertContact, setContactMode } from '../src/db.js';
+import { openDb, upsertContact, setContactMode, upsertKnowledge } from '../src/db.js';
 import { createPlayground } from '../src/playground.js';
 import { decide } from '../src/policy.js';
 
@@ -85,6 +85,30 @@ assert.equal(booking.trace.needsOwner, true);
 // batas pesan
 const tooLong = await pg4.chat({ sessionId: 's6', ip: '4.4.4.4', personaJid, message: 'a'.repeat(1001) });
 assert.match(tooLong.error, /1000|panjang/i);
+
+// katalog akun dipakai saat owner sesuai
+upsertKnowledge(db, {
+  id: 'kb-u1',
+  ownerId: 'u1',
+  category: 'menu',
+  title: 'Kopi tubruk',
+  body: 'Rp10.000',
+  keywords: 'kopi',
+});
+let seenKb = null;
+const pg5 = createPlayground({
+  db,
+  decide,
+  generateReply: async ({ knowledge }) => {
+    seenKb = knowledge;
+    return { reply: 'ok', confidence: 0.9, intent: 'tanya_fakta' };
+  },
+});
+await pg5.chat({ sessionId: 's7', ip: '5.5.5.5', personaJid, message: 'harga kopi?', ownerId: 'u1' });
+assert.equal(seenKb.length, 1);
+assert.equal(seenKb[0].id, 'kb-u1');
+await pg5.chat({ sessionId: 's8', ip: '5.5.5.5', personaJid, message: 'harga kopi?', ownerId: 'demo' });
+assert.equal(seenKb.length, 0);
 
 db.close();
 fs.rmSync(dir, { recursive: true, force: true });

@@ -210,6 +210,7 @@ export function createServer({ db, wa, bus }) {
       personaJid,
       message: req.body?.message,
       language: req.body?.language,
+      ownerId: req.user?.id || 'demo',
     });
     res.status(result.error && !result.trace ? 400 : 200).json(result);
   });
