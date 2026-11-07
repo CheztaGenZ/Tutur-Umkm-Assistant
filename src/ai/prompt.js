@@ -597,6 +597,13 @@ export async function generateReply({
     sources: validSources,
   });
 
+  if (validSources.length === 0 && finalGuarded.intent === 'tanya_fakta') {
+    finalGuarded.reply =
+      language === 'en' ? 'Let me check with the owner first.' : 'aku cek dulu ya ke pemilik';
+    finalGuarded.needsOwner = true;
+    finalGuarded.ownerReason = 'Tidak ada sumber data bisnis untuk pertanyaan ini.';
+  }
+
   return {
     reply: finalGuarded.reply,
     confidence: finalConfidence,

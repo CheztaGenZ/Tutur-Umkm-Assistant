@@ -8,17 +8,17 @@ Pertanyaan: 28
 
 | Jenis | Jumlah | Tanpa knowledge base | Dengan knowledge base | Harga mengarang |
 |---|---|---|---|---|
-| fakta | 16 | 5/16 | 16/16 | 0 |
-| tidak_ada | 6 | 5/6 | 5/6 | 0 |
+| fakta | 16 | 1/16 | 16/16 | 0 |
+| tidak_ada | 6 | 6/6 | 6/6 | 0 |
 | jebakan | 1 | 1/1 | 1/1 | 0 |
 | booking | 3 | 3/3 | 3/3 | 0 |
 | komplain | 1 | 1/1 | 1/1 | 0 |
 | spam | 1 | 1/1 | 1/1 | 0 |
-| **Total** | **28** | **16/28** | **27/28** | **0** |
+| **Total** | **28** | **13/28** | **28/28** | **0** |
 
 ## Kegagalan pada mode grounded
 
-- `q23` (tidak_ada): "Do you have a pool?" -> jawaban: "Wah, kolam renang? Di Sari Kitchen kita fokus ke makanan sih, bukan kolam."
+Tidak ada.
 
 ## Catatan metode
 

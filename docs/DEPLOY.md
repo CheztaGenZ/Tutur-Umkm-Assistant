@@ -34,6 +34,7 @@ The blueprint creates a 1 GB disk mounted at `/var/data`. The app writes
 | `AI_API_KEY` | provider key |
 | `BUSINESS_NAME` | `Sari Kitchen` |
 | `DEMO_OWNER` | `Sari` |
+| `DEMO_DAILY_LIMIT` | `200` |
 | `NODE_VERSION` | `22` |
 
 ## Option B: Railway

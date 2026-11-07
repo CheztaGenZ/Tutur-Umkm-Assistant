@@ -100,12 +100,12 @@
 <p><strong>Batasan:</strong> model kecil bisa salah memberi label intent. Karena itu ada penjaga deterministik: pesan booking, pesanan, dan komplain selalu menjadi draft, walaupun model memberi label lain.</p>
 
 <h3>Hasil evaluasi</h3>
-<p>20 pertanyaan dijalankan dua kali dengan model yang sama. Baseline menjawab dari pengetahuan umum tanpa data bisnis. Tutur memakai retrieval.</p>
+<p>28 pertanyaan dijalankan dua kali dengan model yang sama. Baseline menjawab dari pengetahuan umum tanpa data bisnis. Tutur memakai retrieval.</p>
 <table>
   <tr><th>Metrik</th><th>Tanpa knowledge base</th><th>Tutur</th></tr>
-  <tr><td>Jawaban benar</td><td>11/20</td><td><strong>20/20</strong></td></tr>
+  <tr><td>Jawaban benar</td><td>13/28</td><td><strong>28/28</strong></td></tr>
   <tr><td>Harga karangan pada fakta yang tidak tersedia</td><td>tidak diukur</td><td><strong>0</strong></td></tr>
-  <tr><td>Booking dan komplain dieskalasi</td><td>tidak konsisten</td><td><strong>3/3</strong></td></tr>
+  <tr><td>Booking dan komplain dieskalasi</td><td>tidak konsisten</td><td><strong>4/4</strong></td></tr>
 </table>
 <p class="small">Metode: penilaian otomatis berbasis kata kunci pada 20 pertanyaan. Bukan penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
 

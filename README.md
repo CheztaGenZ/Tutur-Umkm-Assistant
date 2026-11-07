@@ -77,14 +77,14 @@ WhatsApp socket. No mock data is hardcoded into the answer.
 
 ### Evaluation
 
-`npm run eval` runs 20 questions twice: once without the knowledge base, once
+`npm run eval` runs 28 questions twice: once without the knowledge base, once
 with retrieval. Results are written to [docs/eval-results.md](docs/eval-results.md).
 
 Latest run with `deepseek-chat`:
 
 | Metric | Without KB | Tutur |
 |---|---|---|
-| Correct answers | 11/20 | 20/20 |
+| Correct answers | 13/28 | 28/28 |
 | Invented prices on missing facts | - | 0 |
 
 These numbers come from the included test set and an automated keyword check,
@@ -166,7 +166,7 @@ an ephemeral filesystem.
 - Retrieval is keyword based. It handles the demo knowledge base well, but a
   larger catalogue needs embeddings or a proper search index.
 - SQLite suits a single-tenant deployment. Multi-tenant SaaS would need Postgres.
-- The evaluation set has 20 questions and uses keyword scoring. It is a signal,
+- The evaluation set has 28 questions and uses keyword scoring. It is a signal,
   not a benchmark.
 - No real customer pilot yet. Impact numbers on Coba Chat are labeled as
   simulation plus live session data.

@@ -29,6 +29,8 @@ services:
         value: Sari Kitchen
       - key: DEMO_OWNER
         value: Sari
+      - key: DEMO_DAILY_LIMIT
+        value: "200"
       - key: AI_API_KEY
         sync: false
       - key: ADMIN_TOKEN
