@@ -106,7 +106,7 @@ export function createPlayground({
     };
   }
 
-  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto', ownerId = defaultOwnerId } = {}) {
+  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto', ownerId = defaultOwnerId, meName = config.me } = {}) {
     const text = String(message || '').trim();
     if (!text) return { sessionId: null, reply: null, error: 'Pesan wajib diisi' };
     if (text.length > MAX_MESSAGE_CHARS)
@@ -147,7 +147,7 @@ export function createPlayground({
     try {
       const knowledge = searchKnowledge(store.listKnowledge(db, { ownerId, activeOnly: true }), text, 3);
       const result = await generateReply({
-        meName: config.me,
+        meName,
         contactName: contact.alias || contact.name || 'Pelanggan',
         style: parseStyle(contact.style_profile),
         relationship: contact.relationship,

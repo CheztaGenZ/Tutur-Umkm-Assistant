@@ -876,6 +876,19 @@ export function createMessageHandler({ db, wa, bus }) {
         forceDraftReason = 'Ajakan main/VC — konfirmasi dulu ke Chesta';
       }
 
+      // Pesanan dicatat walau balasan masih berupa draft. Pemilik tetap yang
+      // mengonfirmasi, tapi daftar pesanan tidak boleh kosong.
+      if (result.order) {
+        const order = store.createOrder(db, {
+          ownerId: config.ownerId,
+          customerName: result.order.customerName,
+          items: result.order.items,
+          total: result.order.total,
+          source: 'chat',
+        });
+        emit({ type: 'order', jid, contact: contact.name, order });
+      }
+
       const autoOk = shouldAutoSend({
         decision,
         confidence: result.confidence,
@@ -947,22 +960,6 @@ export function createMessageHandler({ db, wa, bus }) {
             } catch {
               /* foto opsional */
             }
-          }
-
-          if (result.order) {
-            const order = store.createOrder(db, {
-              ownerId: config.ownerId,
-              customerName: result.order.customerName,
-              items: result.order.items,
-              total: result.order.total,
-              source: 'chat',
-            });
-            emit({
-              type: 'order',
-              jid,
-              contact: contact.name,
-              order,
-            });
           }
 
           if (result.attachPayment === 'qris') {

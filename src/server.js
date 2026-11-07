@@ -204,11 +204,13 @@ export function createServer({ db, wa, bus }) {
 
   app.get('/api/public/playground/state', (req, res) => {
     res.set('Cache-Control', 'no-store');
+    const profile = req.user ? store.getBusinessProfile(db, req.user.id) : null;
     res.json({
+      personal: Boolean(profile),
       business: {
-        name: config.demo.businessName,
-        tagline: DEMO_BUSINESS.tagline,
-        location: DEMO_BUSINESS.location,
+        name: profile?.name || config.demo.businessName,
+        tagline: profile?.specialty || DEMO_BUSINESS.tagline,
+        location: profile?.location || DEMO_BUSINESS.location,
       },
       personas: DEMO_PERSONAS.map(({ jid, name, label, language, mode }) => ({
         jid,
@@ -235,6 +237,7 @@ export function createServer({ db, wa, bus }) {
       message: req.body?.message,
       language: req.body?.language,
       ownerId: req.user?.id || 'demo',
+      meName: req.user?.name || config.me,
     });
     res.status(result.error && !result.trace ? 400 : 200).json(result);
   });
@@ -686,7 +689,7 @@ export function createServer({ db, wa, bus }) {
       aiReady: Boolean(config.ai.apiKey),
       canWrite: isLocalRequest(req),
       config: {
-        me: config.me,
+        me: req.user?.name || config.me,
         model: config.ai.model,
         visionModel: config.ai.visionModel || '',
         maxPerDay: config.safety.maxPerDay,
@@ -953,7 +956,7 @@ export function createServer({ db, wa, bus }) {
     const contact = store.getContact(db, draft.jid);
     try {
       const result = await generateReply({
-        meName: config.me,
+        meName: req.user?.name || config.me,
         contactName: contact?.name || String(draft.jid).split('@')[0],
         style: pickStyle(db, contact),
         relationship: contact?.relationship ?? null,
@@ -1136,7 +1139,7 @@ export function createServer({ db, wa, bus }) {
         .map((r) => r.body);
 
       const result = await generateReply({
-        meName: config.me,
+        meName: req.user?.name || config.me,
         contactName: contact.name,
         style,
         relationship: contact.relationship,
@@ -1564,3 +1567,4 @@ export function createServer({ db, wa, bus }) {
 
   return app;
 }
+

@@ -101,6 +101,12 @@ async function loadConfig() {
   state.persona = data.personas[0];
   state.language = data.personas[0].language || 'auto';
   $('#business-name').textContent = data.business.name;
+  if (data.personal) {
+    $('#intro-title').textContent = 'Coba dengan data bisnis Anda.';
+    $('#business-location').textContent = data.business.location
+      ? `di ${data.business.location}`
+      : '';
+  }
   $('#language').value = state.language === 'en' || state.language === 'id' ? state.language : 'auto';
   renderPersonas();
   renderScenarios();
@@ -245,7 +251,7 @@ async function send() {
     if (data.order) {
       addBubble(
         'system',
-        `Pesanan dicatat: ${data.order.customerName || 'tanpa nama'} · ${data.order.items} · Rp${new Intl.NumberFormat('id-ID').format(data.order.total || 0)}`,
+        `Pesanan dicatat: ${data.order.customer_name || data.order.customerName || 'tanpa nama'} · ${data.order.items} · Rp${new Intl.NumberFormat('id-ID').format(data.order.total || 0)}`,
       );
     }
     if (data.error) {
