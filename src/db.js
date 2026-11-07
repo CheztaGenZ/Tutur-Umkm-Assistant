@@ -300,6 +300,12 @@ export function openDb(dataDir) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_contacts_import_name ON contacts(owner_id, import_name)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_contacts_last_seen ON contacts(owner_id, last_seen_at)');
 
+  // Nomor asing yang belum pernah punya gaya chat langsung dijawab sopan,
+  // tanpa menunggu persetujuan pemilik. Pesan berisiko tetap ditahan policy.
+  db.prepare(
+    "UPDATE contacts SET mode = 'auto' WHERE register = 'wajib_sopan' AND mode = 'draft'",
+  ).run();
+
   for (const table of ['messages', 'drafts', 'examples', 'activities', 'status_jobs', 'status_send_log']) {
     const tableCols = db.prepare(`PRAGMA table_info(${table})`).all();
     if (!tableCols.some((c) => c.name === 'owner_id')) {
