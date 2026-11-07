@@ -535,6 +535,25 @@ export function createServer({ db, wa, bus }) {
 
   const ownerId = (req) => req.user?.id || 'demo';
   const waOwnerId = () => store.kvGet(db, 'wa_owner_id') || null;
+  const phoneDigits = (value) => {
+    let digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('62')) digits = '0' + digits.slice(2);
+    return digits;
+  };
+  // Kalau nomor WhatsApp sama dengan kontak di salah satu profil usaha,
+  // ikat otomatis supaya tidak salah akun saat ada beberapa akun login.
+  const autoClaimByPhone = () => {
+    if (waOwnerId()) return;
+    const waNumber = phoneDigits(wa.snapshot().me?.number);
+    if (waNumber.length < 9) return;
+    const rows = db
+      .prepare(
+        "SELECT owner_id, contact FROM business_profiles WHERE contact IS NOT NULL AND TRIM(contact) != ''",
+      )
+      .all();
+    const matches = rows.filter((row) => phoneDigits(row.contact) === waNumber);
+    if (matches.length === 1) store.kvSet(db, 'wa_owner_id', matches[0].owner_id);
+  };
   const ownsWhatsApp = (req) => {
     if (!req.user) return true;
     const owner = waOwnerId();
@@ -701,6 +720,7 @@ export function createServer({ db, wa, bus }) {
 
   app.get('/api/status', (req, res) => {
     res.set('Cache-Control', 'no-store');
+    autoClaimByPhone();
     const owner = waOwnerId();
     const claimed = Boolean(owner);
     const ownedByMe = !owner ? true : !req.user || owner === req.user.id;

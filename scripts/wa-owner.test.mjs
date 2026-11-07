@@ -97,6 +97,18 @@ assert.equal((await post('/api/wa/logout', {}, cookieB)).status, 403);
 // Pemilik bisa memutus, lalu nomor terbuka untuk klaim berikutnya.
 assert.equal((await post('/api/wa/logout', {}, cookieA)).status, 200);
 
+// Nomor yang cocok dengan kontak profil usaha diikat otomatis.
+const cookieC = await register('owner-c@example.com', 'Pemilik C');
+const businessC = await post(
+  '/api/business',
+  { name: 'Toko C', category: 'Toko', contact: '08111111111' },
+  cookieC,
+);
+assert.equal(businessC.status, 200);
+const statusC = await (await fetch(`${base}/api/status`, { headers: { cookie: cookieC } })).json();
+assert.equal(statusC.wa.claimed, true);
+assert.equal(statusC.wa.ownedByMe, true);
+
 server.close();
 db.close();
 fs.rmSync(dir, { recursive: true, force: true });
