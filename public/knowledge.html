@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Data bisnis - Tutur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/knowledge.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">T</span>
+        <span>
+          <strong>Tutur</strong>
+          <small>Data bisnis</small>
+        </span>
+      </a>
+      <nav class="links" aria-label="Navigasi">
+        <a href="/playground">Judge playground</a>
+        <a href="/">Dashboard</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <h1>Data bisnis</h1>
+        <p>
+          Tutur hanya menjawab harga, jam, menu, dan kebijakan dari daftar ini. Kalau datanya tidak
+          ada, Tutur bilang akan cek ke pemilik. Tambahkan satu baris untuk setiap fakta yang boleh
+          dipakai.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Tambah data</h2>
+        <form id="knowledge-form">
+          <div class="row">
+            <label>
+              Kategori
+              <select id="category" required>
+                <option value="menu">Menu</option>
+                <option value="jam">Jam buka</option>
+                <option value="lokasi">Lokasi</option>
+                <option value="kebijakan">Kebijakan</option>
+                <option value="layanan">Layanan</option>
+                <option value="umum">Umum</option>
+              </select>
+            </label>
+            <label>
+              Judul
+              <input id="title" type="text" maxlength="120" required placeholder="Nasi campur vegan" />
+            </label>
+          </div>
+          <label>
+            Isi
+            <textarea id="body" rows="3" maxlength="600" required placeholder="Rp35.000, tersedia setiap hari."></textarea>
+          </label>
+          <label>
+            Kata kunci
+            <input id="keywords" type="text" maxlength="200" placeholder="vegan, harga, nasi campur" />
+          </label>
+          <div class="actions">
+            <button type="submit">Simpan data</button>
+            <span class="status" id="status" role="status"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Data tersimpan</h2>
+          <span class="count" id="count">0 baris</span>
+        </div>
+        <div id="list" class="list">
+          <p class="empty">Memuat data...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Halaman ini butuh token admin. Buka dengan <code>?token=...</code> atau lewat tautan dari
+        dashboard.
+      </p>
+    </footer>
+
+    <script type="module" src="/knowledge.js"></script>
+  </body>
+</html>

@@ -59,5 +59,7 @@ assert.equal(detectRiskyIntent('Can I book a table for 6 people?'), 'booking');
 assert.equal(detectRiskyIntent('Mau reservasi 12 orang besok'), 'booking');
 assert.equal(detectRiskyIntent('Kemarin pesanan saya telat satu jam'), 'komplain');
 assert.equal(detectRiskyIntent('Berapa harga nasi campur?'), null);
+assert.equal(detectRiskyIntent('pesan satu'), null);
+assert.equal(detectRiskyIntent('mau pesan nasi goreng'), 'pesanan');
 
 console.log('grounding ok');

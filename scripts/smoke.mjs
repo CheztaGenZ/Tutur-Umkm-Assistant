@@ -154,7 +154,7 @@ try {
 
   const page = await fetch(base + '/');
   const html = await page.text();
-  check('dashboard ter-serve', page.ok && html.includes('WA Reply AI'));
+  check('dashboard ter-serve', page.ok && html.includes('Tutur'));
 
   const preview = await (
     await fetch(`${base}/api/ingest/preview`, {

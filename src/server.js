@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -84,6 +84,7 @@ const redactEventForLan = (event = {}) => {
 export function createServer({ db, wa, bus }) {
   const app = express();
   app.disable('x-powered-by');
+  if (config.demo.enabled) app.set('trust proxy', 1);
 
   const allowedHosts = new Set(['localhost', '127.0.0.1', '::1']);
   try {
@@ -143,7 +144,7 @@ export function createServer({ db, wa, bus }) {
   const publicHits = new Map();
   app.use('/api/public', express.json({ limit: '16kb' }));
   app.use('/api/public', (req, res, next) => {
-    const ip = String(req.socket?.remoteAddress || req.ip || 'unknown');
+    const ip = String(req.ip || 'unknown');
     const now = Date.now();
     const hits = (publicHits.get(ip) || []).filter((t) => now - t < 60_000);
     if (hits.length >= 30) {
@@ -179,7 +180,7 @@ export function createServer({ db, wa, bus }) {
     const personaJid = DEMO_PERSONAS.some((p) => p.jid === req.body?.personaJid)
       ? req.body.personaJid
       : DEMO_PERSONAS[0].jid;
-    const ip = String(req.socket?.remoteAddress || req.ip || 'unknown');
+    const ip = String(req.ip || 'unknown');
     const result = await playground.chat({
       sessionId: req.body?.sessionId,
       ip,
@@ -347,7 +348,7 @@ export function createServer({ db, wa, bus }) {
         type: 'log',
         message: `Provider AI diperbarui: ${result.model}${
           result.visionModel ? ` + ${result.visionModel}` : ''
-        }${host ? ` · ${host}` : ''}`,
+        }${host ? ` Â· ${host}` : ''}`,
       });
       bus.emit('event', {
         type: 'settings',

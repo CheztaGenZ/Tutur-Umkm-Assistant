@@ -90,8 +90,23 @@ export function decide({
   return { action: 'auto', reason: 'Kontak di mode auto, semua batas aman.' };
 }
 
+/**
+ * Satu tempat untuk memutuskan apakah balasan boleh dikirim tanpa persetujuan.
+ * needsOwner dan spam selalu menang, bahkan saat confidence tinggi.
+ */
+export function shouldAutoSend({
+  decision,
+  confidence = 0,
+  confidenceMin = config.safety.autoConfidenceMin,
+  forceDraft = false,
+  needsOwner = false,
+  intent = 'obrolan',
+}) {
+  if (forceDraft || needsOwner || intent === 'spam') return false;
+  return decision?.action === 'auto' && Number(confidence) >= Number(confidenceMin);
+}
+
 /** Jeda manusiawi sebelum "mengetik". */
-export function humanDelay() {
-  const { replyDelayMinMs: min, replyDelayMaxMs: max } = config.safety;
+export function humanDelay() {  const { replyDelayMinMs: min, replyDelayMaxMs: max } = config.safety;
   return Math.round(min + Math.random() * Math.max(0, max - min));
 }

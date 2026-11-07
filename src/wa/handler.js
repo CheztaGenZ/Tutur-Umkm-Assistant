@@ -1,5 +1,6 @@
 import { config } from '../config.js';
-import { decide, dayStart, hourStart } from '../policy.js';
+import { decide, dayStart, hourStart, shouldAutoSend } from '../policy.js';
+import { searchKnowledge } from '../knowledge.js';
 import * as store from '../db.js';
 import { cleanMessage } from '../ingest/parseExport.js';
 import { generateReply, generateRelationship } from '../ai/prompt.js';
@@ -540,6 +541,12 @@ export function createMessageHandler({ db, wa, bus }) {
         ? examples.filter((e) => isCrude(e.mine)).slice(0, 6).map((e) => e.mine)
         : [];
 
+      const knowledge = searchKnowledge(
+        store.listKnowledge(db, { activeOnly: true }),
+        incomingBody,
+        3,
+      );
+
       let genCalls = 0;
       const MAX_GEN_CALLS = 2;
       const gen = async (over = {}) => {
@@ -566,6 +573,7 @@ export function createMessageHandler({ db, wa, bus }) {
           maxBubbles: contact.burst || 3,
           memory: contact.memory,
           activity: activeActivity,
+          knowledge,
           ...over,
         });
       };
@@ -576,6 +584,13 @@ export function createMessageHandler({ db, wa, bus }) {
       } catch (err) {
         emit({ type: 'error', message: `AI gagal: ${err.message}` });
         markInbound(inbound, 'error', err.message);
+        return;
+      }
+
+      // Spam tidak pernah dikirim, bahkan bila policy awal lolos.
+      if (result.intent === 'spam') {
+        markInbound(inbound, 'ignored', 'spam');
+        emit({ type: 'skip', jid, reason: 'Spam/promosi — tidak dibalas' });
         return;
       }
 
@@ -861,10 +876,13 @@ export function createMessageHandler({ db, wa, bus }) {
         forceDraftReason = 'Ajakan main/VC — konfirmasi dulu ke Chesta';
       }
 
-      const autoOk =
-        !forceDraft &&
-        decision.action === 'auto' &&
-        result.confidence >= config.safety.autoConfidenceMin;
+      const autoOk = shouldAutoSend({
+        decision,
+        confidence: result.confidence,
+        forceDraft,
+        needsOwner: result.needsOwner,
+        intent: result.intent,
+      });
 
       if (autoOk) {
         try {

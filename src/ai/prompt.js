@@ -87,7 +87,7 @@ const RISKY_INTENTS = new Set(['pesanan', 'booking', 'komplain']);
 
 const COMPLAINT_RE = /\b(komplain|complaint|telat|terlambat|late|salah|wrong|dingin|cold|kecewa|refund|uang kembali|sakit|food poisoning)/i;
 const BOOKING_RE = /\b(book|reserv|table|meja|seat|kursi untuk|datang \d+|alergi|allerg|nut|kacang|rombongan|group of)/i;
-const ORDER_RE = /\b(pesan|order|delivery|antar|gofood|take ?away|bungkus)/i;
+const ORDER_RE = /\b(mau pesan|pesan antar|pesan makanan|pesan minum|order|delivery|antar|gofood|take ?away|bungkus)/i;
 
 /** Penjaga deterministik: model kecil sering salah label pesan berisiko. */
 export function detectRiskyIntent(message) {

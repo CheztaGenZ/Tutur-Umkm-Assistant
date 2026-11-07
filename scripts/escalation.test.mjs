@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { decide } from '../src/policy.js';
+import { decide, shouldAutoSend } from '../src/policy.js';
 
 const base = {
   jid: '62811@s.whatsapp.net',
@@ -36,5 +36,12 @@ assert.match(spam.reason, /spam/i);
 
 const spamDraft = decide({ ...base, contact: { mode: 'draft' }, intent: 'spam' });
 assert.equal(spamDraft.action, 'ignore');
+
+const auto = { action: 'auto' };
+assert.equal(shouldAutoSend({ decision: auto, confidence: 0.9 }), true);
+assert.equal(shouldAutoSend({ decision: auto, confidence: 0.9, needsOwner: true }), false);
+assert.equal(shouldAutoSend({ decision: auto, confidence: 0.9, intent: 'spam' }), false);
+assert.equal(shouldAutoSend({ decision: auto, confidence: 0.3 }), false);
+assert.equal(shouldAutoSend({ decision: auto, confidence: 0.9, forceDraft: true }), false);
 
 console.log('escalation ok');

@@ -93,7 +93,7 @@ const app = createServer({ db, wa, bus });
 const bindHost = process.env.BIND_HOST || '127.0.0.1';
 const server = app.listen(config.port, bindHost, () => {
   console.log('');
-  console.log('  WA Reply AI');
+  console.log(`  ${config.demo.enabled ? 'Tutur' : 'WA Reply AI'}`);
   console.log(`  Dashboard : http://localhost:${config.port}`);
   console.log(`  Bind      : ${bindHost}`);
   console.log(`  Model     : ${config.ai.model}`);
