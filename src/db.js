@@ -122,6 +122,30 @@ CREATE TABLE IF NOT EXISTS ai_usage (
   cached_tokens     INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_ai_usage_ts ON ai_usage(ts);
+
+-- Sumber fakta bisnis untuk jawaban yang ter-grounding.
+CREATE TABLE IF NOT EXISTS knowledge (
+  id         TEXT PRIMARY KEY,
+  category   TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  body       TEXT NOT NULL,
+  keywords   TEXT NOT NULL DEFAULT '',
+  active     INTEGER NOT NULL DEFAULT 1,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_active ON knowledge(active, category);
+
+-- Event playground anonim. Tidak menyimpan isi percakapan.
+CREATE TABLE IF NOT EXISTS playground_events (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_hash TEXT NOT NULL,
+  intent       TEXT,
+  action       TEXT,
+  needs_owner  INTEGER NOT NULL DEFAULT 0,
+  latency_ms   INTEGER NOT NULL DEFAULT 0,
+  ts           INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_playground_events_ts ON playground_events(ts);
 `;
 
 export function openDb(dataDir) {
@@ -691,4 +715,100 @@ export function aiUsageSummary(db) {
         }
       : null,
   };
+}
+
+/* ------------------------------- knowledge ------------------------------- */
+
+const knowledgeSlug = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'knowledge';
+
+const mapKnowledge = (row) =>
+  row
+    ? {
+        id: row.id,
+        category: row.category,
+        title: row.title,
+        body: row.body,
+        keywords: row.keywords,
+        active: row.active === 1 || row.active === true ? 1 : 0,
+        updated_at: row.updated_at,
+      }
+    : null;
+
+export function listKnowledge(db, { activeOnly = false } = {}) {
+  const sql = activeOnly
+    ? 'SELECT * FROM knowledge WHERE active = 1 ORDER BY category, title'
+    : 'SELECT * FROM knowledge ORDER BY category, title';
+  return db.prepare(sql).all().map(mapKnowledge);
+}
+
+export function getKnowledge(db, id) {
+  return mapKnowledge(db.prepare('SELECT * FROM knowledge WHERE id = ?').get(id));
+}
+
+export function upsertKnowledge(db, { id, category, title, body, keywords = '', active = 1 } = {}) {
+  const cleanTitle = String(title || '').trim();
+  const cleanBody = String(body || '').trim();
+  if (!cleanTitle) throw new Error('Judul knowledge wajib diisi');
+  if (!cleanBody) throw new Error('Isi knowledge wajib diisi');
+  const cleanId = id ? String(id) : knowledgeSlug(cleanTitle);
+  db.prepare(
+    `INSERT INTO knowledge (id, category, title, body, keywords, active, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       category = excluded.category,
+       title = excluded.title,
+       body = excluded.body,
+       keywords = excluded.keywords,
+       active = excluded.active,
+       updated_at = excluded.updated_at`,
+  ).run(
+    cleanId,
+    String(category || 'umum').trim() || 'umum',
+    cleanTitle,
+    cleanBody,
+    String(keywords || ''),
+    active ? 1 : 0,
+    Date.now(),
+  );
+  return getKnowledge(db, cleanId);
+}
+
+export function deleteKnowledge(db, id) {
+  return db.prepare('DELETE FROM knowledge WHERE id = ?').run(String(id)).changes > 0;
+}
+
+/* ---------------------------- playground events --------------------------- */
+
+export function recordPlaygroundEvent(db, { sessionHash, intent, action, needsOwner, latencyMs }) {
+  db.prepare(
+    `INSERT INTO playground_events (session_hash, intent, action, needs_owner, latency_ms, ts)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(
+    String(sessionHash || ''),
+    String(intent || ''),
+    String(action || ''),
+    needsOwner ? 1 : 0,
+    Math.max(0, Math.round(Number(latencyMs) || 0)),
+    Date.now(),
+  );
+}
+
+export function playgroundEventTotals(db) {
+  return db
+    .prepare(
+      `SELECT
+         COUNT(*) AS messages,
+         COALESCE(SUM(CASE WHEN action = 'auto' THEN 1 ELSE 0 END), 0) AS auto,
+         COALESCE(SUM(CASE WHEN action = 'draft' THEN 1 ELSE 0 END), 0) AS draft,
+         COALESCE(SUM(CASE WHEN action = 'ignore' THEN 1 ELSE 0 END), 0) AS ignored,
+         COALESCE(SUM(CASE WHEN needs_owner = 1 THEN 1 ELSE 0 END), 0) AS escalated,
+         COALESCE(AVG(latency_ms), 0) AS avg_latency_ms
+       FROM playground_events`,
+    )
+    .get();
 }
