@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "tutur",
   "version": "1.0.0",
   "private": true,
@@ -18,11 +18,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CheztaGenZ/tutur.git"
+    "url": "git+https://github.com/CheztaGenZ/Tutur-Umkm-Assistant.git"
   },
-  "homepage": "https://github.com/CheztaGenZ/tutur#readme",
+  "homepage": "https://github.com/CheztaGenZ/Tutur-Umkm-Assistant#readme",
   "bugs": {
-    "url": "https://github.com/CheztaGenZ/tutur/issues"
+    "url": "https://github.com/CheztaGenZ/Tutur-Umkm-Assistant/issues"
   },
   "engines": {
     "node": ">=22"
@@ -80,3 +80,4 @@
     "playwright-core": "^1.65.0"
   }
 }
+

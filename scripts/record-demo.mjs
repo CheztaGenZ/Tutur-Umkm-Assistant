@@ -1,4 +1,4 @@
-import { chromium } from 'playwright-core';
+﻿import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -31,7 +31,7 @@ small{font-size:20px;color:#a94b25;font-weight:600}
 .dot{width:64px;height:64px;border-radius:16px;background:#a94b25;color:#fff8ef;display:grid;place-items:center;font-family:Georgia,serif;font-size:38px;margin-bottom:32px}
 </style></head><body><div class="box"><div class="dot">T</div><h1>${title}</h1><p>${body}</p><small>${foot}</small></div></body></html>`;
 
-await page.setContent(slide('Tutur', 'Chat pelanggan dibalas seperti pemilik warung. Booking dan komplain ditahan untuk Anda.', 'Bali DigiFest 2026 · AI Web Innovation Challenge'));
+await page.setContent(slide('Tutur', 'Chat pelanggan dibalas seperti pemilik warung. Booking dan komplain ditahan untuk Anda.', 'Bali DigiFest 2026 Â· AI Web Innovation Challenge'));
 await sleep(6500);
 
 await page.goto('http://127.0.0.1:3211/', { waitUntil: 'networkidle' });
@@ -52,7 +52,7 @@ await page.getByRole('button', { name: /Spam \/ promo/i }).click();
 await page.waitForSelector('text=sengaja tidak dibalas', { timeout: 30000 }).catch(() => {});
 await sleep(3000);
 
-await page.setContent(slide('Balasan yang tahu batas.', '28 dari 28 pertanyaan uji benar. Nol harga karangan. Booking dan komplain selalu menjadi draft.', 'tuturku.biz.id · github.com/CheztaGenZ/tutur'));
+await page.setContent(slide('Balasan yang tahu batas.', '28 dari 28 pertanyaan uji benar. Nol harga karangan. Booking dan komplain selalu menjadi draft.', 'tuturku.biz.id Â· github.com/CheztaGenZ/Tutur-Umkm-Assistant'));
 await sleep(6000);
 
 const video = page.video();
@@ -60,3 +60,4 @@ await context.close();
 await browser.close();
 const file = await video.path();
 console.log(file);
+

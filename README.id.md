@@ -1,10 +1,10 @@
-<div align="center">
+﻿<div align="center">
   <img src="docs/assets/tutur-banner.svg" alt="Tutur, asisten WhatsApp untuk UMKM Bali" width="100%" />
 
   <p>
-    <a href="https://tuturku.biz.id/coba"><strong>Demo langsung</strong></a> ·
-    <a href="README.md">English</a> ·
-    <a href="docs/ARCHITECTURE.md">Arsitektur</a> ·
+    <a href="https://tuturku.biz.id/coba"><strong>Demo langsung</strong></a> Â·
+    <a href="README.md">English</a> Â·
+    <a href="docs/ARCHITECTURE.md">Arsitektur</a> Â·
     <a href="docs/DEPLOY.md">Deploy</a>
   </p>
 </div>
@@ -69,8 +69,8 @@ Hasil ini berasal dari test set bawaan dan pengecekan kata kunci otomatis, bukan
 ## Jalankan lokal
 
 ```bash
-git clone https://github.com/CheztaGenZ/tutur.git
-cd tutur
+git clone https://github.com/CheztaGenZ/Tutur-Umkm-Assistant.git
+cd Tutur-Umkm-Assistant
 cp .env.example .env
 # isi AI_API_KEY dan AI_MODEL
 npm install
@@ -117,3 +117,4 @@ npm run eval                          # butuh API key AI
 MIT. Lihat [LICENSE](LICENSE).
 
 Dokumen lengkap dalam Bahasa Inggris ada di [README.md](README.md).
+

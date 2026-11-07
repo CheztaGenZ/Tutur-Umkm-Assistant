@@ -22,7 +22,7 @@ npm test
 
 The GitHub Actions workflow runs `npm test` on every push and pull request:
 
-<https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml>
+<https://github.com/CheztaGenZ/Tutur-Umkm-Assistant/actions/workflows/test.yml>
 
 Latest `main` result: **success**.
 
@@ -55,4 +55,5 @@ Be clear about the boundary:
 
 The screenshots/video were generated from a demo database and a fake WhatsApp client.
 The public repository does not include any personal data.
+
 

@@ -1,8 +1,8 @@
-<div align="center">
+﻿<div align="center">
   <img src="docs/assets/tutur-banner.svg" alt="Tutur, AI WhatsApp concierge for Balinese warungs and homestays" width="100%" />
 
   <p>
-    <a href="https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml"><img alt="CI" src="https://github.com/CheztaGenZ/tutur/actions/workflows/test.yml/badge.svg" /></a>
+    <a href="https://github.com/CheztaGenZ/Tutur-Umkm-Assistant/actions/workflows/test.yml"><img alt="CI" src="https://github.com/CheztaGenZ/Tutur-Umkm-Assistant/actions/workflows/test.yml/badge.svg" /></a>
     <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2f6b4f" /></a>
     <img alt="Node.js 22+" src="https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white" />
     <img alt="Version v1.0.0" src="https://img.shields.io/badge/version-v1.0.0-a94b25" />
@@ -10,10 +10,10 @@
   </p>
 
   <p>
-    <a href="https://tuturku.biz.id/coba"><strong>Live demo</strong></a> ·
-    <a href="docs/ARCHITECTURE.md">Architecture</a> ·
-    <a href="docs/eval-results.md">Evaluation</a> ·
-    <a href="docs/DEPLOY.md">Deployment</a> ·
+    <a href="https://tuturku.biz.id/coba"><strong>Live demo</strong></a> Â·
+    <a href="docs/ARCHITECTURE.md">Architecture</a> Â·
+    <a href="docs/eval-results.md">Evaluation</a> Â·
+    <a href="docs/DEPLOY.md">Deployment</a> Â·
     <a href="README.id.md">Bahasa Indonesia</a>
   </p>
 </div>
@@ -126,8 +126,8 @@ These are results from the included test set, not a human panel. The method and 
 ## Quick start
 
 ```bash
-git clone https://github.com/CheztaGenZ/tutur.git
-cd tutur
+git clone https://github.com/CheztaGenZ/Tutur-Umkm-Assistant.git
+cd Tutur-Umkm-Assistant
 cp .env.example .env
 # set AI_API_KEY and AI_MODEL in .env
 npm install
@@ -233,3 +233,4 @@ MIT. See [LICENSE](LICENSE).
 ## Photo credits
 
 Landing photo: "Nasi campur as art, Ubud, Indonesia" by Vyacheslav Argenberg, CC BY 4.0, via Wikimedia Commons. Gallery photos: Gunawan Kartapranata (CC BY-SA 3.0), Crisco 1492 (CC BY-SA 3.0), mararie (CC BY-SA 2.0), via Wikimedia Commons.
+

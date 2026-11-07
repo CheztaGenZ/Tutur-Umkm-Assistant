@@ -8,7 +8,7 @@ Bali DigiFest 2026, AI Web Innovation Challenge
 | Masalah, target user, solusi dijelaskan | OK | Proposal bagian 1 sampai 3 |
 | AI implementation dijelaskan: model, input-output, alasan | OK | Proposal bagian 4 dan `AI-TECHNOLOGY-DISCLOSURE.md` |
 | MVP web bisa dibuka dan fungsi utama bekerja | Perlu deploy | Kode siap, lihat `docs/DEPLOY.md` |
-| GitHub dapat diakses juri | Perlu push | Repo public: `CheztaGenZ/tutur` |
+| GitHub dapat diakses juri | Perlu push | Repo public: `CheztaGenZ/Tutur-Umkm-Assistant` |
 | README lengkap dan instruksi menjalankan | OK | `README.md` |
 | `.env.example` tersedia, tanpa secret | OK | Tidak ada key asli |
 | Deployment URL aktif | Belum | Isi setelah deploy |
@@ -25,4 +25,5 @@ Bali DigiFest 2026, AI Web Innovation Challenge
 - [ ] Restart service, pastikan data knowledge tetap ada.
 - [ ] Buat tag `v1.0-submission` dan catat commit hash.
 - [ ] Kirim link playground, repo, dan token dashboard melalui form panitia.
+
 

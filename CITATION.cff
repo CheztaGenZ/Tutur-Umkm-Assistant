@@ -1,4 +1,4 @@
-cff-version: 1.2.0
+﻿cff-version: 1.2.0
 message: If you use Tutur in research or a project, cite this repository.
 title: Tutur
 abstract: AI WhatsApp concierge for Balinese warungs and homestays. Answers from the business's own data, captures orders, and hands risky messages to the owner.
@@ -7,7 +7,7 @@ authors:
     given-names: Chesta Adabi
 version: 1.0.0
 date-released: 2026-11-07
-url: https://github.com/CheztaGenZ/tutur
+url: https://github.com/CheztaGenZ/Tutur-Umkm-Assistant
 license: MIT
 keywords:
   - WhatsApp
@@ -15,3 +15,4 @@ keywords:
   - UMKM
   - Bali
   - grounded generation
+

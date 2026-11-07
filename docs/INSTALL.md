@@ -15,8 +15,8 @@ provider is required.
 ### Option A: Git
 
 ```bash
-git clone https://github.com/CheztaGenZ/tutur.git
-cd tutur
+git clone https://github.com/CheztaGenZ/Tutur-Umkm-Assistant.git
+cd Tutur-Umkm-Assistant
 ```
 
 ### Option B: ZIP
@@ -170,4 +170,5 @@ BIND_HOST=0.0.0.0
 
 Then open `http://<PC-IP>:3000` from the phone. This is read-only for most data. Do not
 expose it to the internet without VPN/PIN/auth proxy. See [SECURITY.md](../SECURITY.md).
+
 

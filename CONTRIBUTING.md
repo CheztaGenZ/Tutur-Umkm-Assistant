@@ -7,8 +7,8 @@ Thanks for helping. Tutur is a small project, so the rules are simple.
 Node.js 22 or newer is required.
 
 ```bash
-git clone https://github.com/CheztaGenZ/tutur.git
-cd tutur
+git clone https://github.com/CheztaGenZ/Tutur-Umkm-Assistant.git
+cd Tutur-Umkm-Assistant
 npm ci
 cp .env.example .env
 npm test
@@ -50,3 +50,4 @@ Do not open a public issue for a vulnerability. Follow [SECURITY.md](SECURITY.md
 ## License
 
 By contributing, you agree that your work is released under the MIT license.
+
