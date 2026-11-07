@@ -107,7 +107,7 @@
   <tr><td>Harga karangan pada fakta yang tidak tersedia</td><td>tidak diukur</td><td><strong>0</strong></td></tr>
   <tr><td>Booking dan komplain dieskalasi</td><td>tidak konsisten</td><td><strong>4/4</strong></td></tr>
 </table>
-<p class="small">Metode: penilaian otomatis berbasis kata kunci pada 20 pertanyaan. Bukan penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
+<p class="small">Metode: penilaian otomatis berbasis kata kunci pada 28 pertanyaan. Bukan penilaian panel manusia. Hasil lengkap ada di <em>docs/eval-results.md</em>.</p>
 
 <h2>5. MVP &amp; Key Features</h2>
 <table>
@@ -120,6 +120,8 @@
   <tr><td class="check">Berfungsi</td><td>Dashboard draft, kontak, knowledge, metrik</td><td>Akses dengan token admin</td></tr>
   <tr><td class="check">Berfungsi</td><td>Akun pemilik: email, Google, Facebook</td><td>Sesi tersimpan, katalog per akun</td></tr>
   <tr><td class="check">Berfungsi</td><td>Katalog produk tersinkron ke AI</td><td>Harga produk dipakai saat menjawab</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Pembayaran dan QRIS</td><td>AI mengirim gambar QRIS atau info rekening dari profil usaha</td></tr>
+  <tr><td class="check">Berfungsi</td><td>Pencatatan pesanan</td><td>Nama, item, dan total masuk ke menu Pesanan</td></tr>
   <tr><td class="small">Tambahan</td><td>Vision, voice note, status terjadwal</td><td>Dari mesin lama, tidak dipakai di jalur juri</td></tr>
 </table>
 
@@ -170,7 +172,7 @@
   <li><strong>Risiko:</strong> booking dan komplain tidak pernah dikonfirmasi otomatis.</li>
 </ul>
 <p><strong>Pengembangan berikutnya:</strong> pencarian semantik untuk katalog besar, sinkronisasi harga dari POS, dukungan multi-cabang, dan evaluasi dengan pemilik usaha nyata. Skala multi-tenant memerlukan Postgres dan antrean pesan.</p>
-<p><strong>Keterbatasan MVP:</strong> belum ada pilot dengan pelanggan nyata, evaluasi masih 20 pertanyaan, dan retrieval berbasis kata kunci. Semua angka dampak di UI diberi label simulasi.</p>
+<p><strong>Keterbatasan MVP:</strong> belum ada pilot dengan pelanggan nyata, evaluasi masih 28 pertanyaan, dan retrieval berbasis kata kunci. Semua angka dampak di UI diberi label simulasi.</p>
 
 <h2>9. Technology Disclosure</h2>
 <table>
