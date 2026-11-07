@@ -4,6 +4,8 @@ import { searchKnowledge } from '../knowledge.js';
 import * as store from '../db.js';
 import { cleanMessage } from '../ingest/parseExport.js';
 import { generateReply, generateRelationship } from '../ai/prompt.js';
+import { aiConfigForOwner } from '../ai/account.js';
+import { withAiConfig } from '../ai/context.js';
 import { rebuildProfile } from '../ingest/rebuild.js';
 import { pickStyle } from '../ingest/groupStyle.js';
 import { isCrude, CRUDE_RE } from '../ingest/style.js';
@@ -185,13 +187,14 @@ export function createHistoryIngest({ db, wa, bus }) {
 
 /* ------------------------------ pesan masuk ------------------------------- */
 
-export function createMessageHandler({ db, wa, bus }) {
+export function createMessageHandler({ db, wa, bus, allowGlobalAi = false }) {
   const emit = (event) => bus.emit('event', event);
 
   // Satu nomor WhatsApp per deployment. Akun yang mengklaim nomor ini
   // menjadi pemilik data chat, knowledge, dan pesanan untuk balasan WA.
   const waOwner = () => store.kvGet(db, 'wa_owner_id') || config.ownerId;
   const waOwnerName = () => store.getBusinessProfile(db, waOwner())?.name || config.me;
+  const resolveAi = () => (allowGlobalAi ? config.ai : aiConfigForOwner(db, waOwner()));
 
   async function withLock(jid, fn) {
     const prev = lockChains.get(jid) || Promise.resolve();
@@ -474,6 +477,15 @@ export function createMessageHandler({ db, wa, bus }) {
     const contact = store.getContact(db, jid);
     if (!contact) return;
 
+    const ai = resolveAi();
+    if (!ai) {
+      emit({
+        type: 'error',
+        message: `API key AI belum diatur untuk ${waOwnerName()}. Buka Setting di dashboard.`,
+      });
+      return;
+    }
+
     const number = String(jid).split('@')[0];
     const lastOut = db
       .prepare(
@@ -561,26 +573,28 @@ export function createMessageHandler({ db, wa, bus }) {
           err.code = 'AI_BUDGET';
           throw err;
         }
-        return generateReply({
-          meName: waOwnerName(),
-          contactName: contact.name || number,
-          style,
-          relationship,
-          examples,
-          messages: history,
-          image,
-          recentReplies: recent,
-          avoidPhrases: banned,
-          register,
-          crudeExamples,
-          alias: contact.alias,
-          language: contact.language,
-          maxBubbles: contact.burst || 3,
-          memory: contact.memory,
-          activity: activeActivity,
-          knowledge,
-          ...over,
-        });
+        return withAiConfig(ai, () =>
+          generateReply({
+            meName: waOwnerName(),
+            contactName: contact.name || number,
+            style,
+            relationship,
+            examples,
+            messages: history,
+            image,
+            recentReplies: recent,
+            avoidPhrases: banned,
+            register,
+            crudeExamples,
+            alias: contact.alias,
+            language: contact.language,
+            maxBubbles: contact.burst || 3,
+            memory: contact.memory,
+            activity: activeActivity,
+            knowledge,
+            ...over,
+          }),
+        );
       };
 
       let result;
@@ -1019,12 +1033,16 @@ export function createMessageHandler({ db, wa, bus }) {
 
   async function ensureRelationship(contact, examples) {
     if (contact.relationship || examples.length < 8) return contact.relationship;
+    const ai = resolveAi();
+    if (!ai) return contact.relationship;
     try {
-      const text = await generateRelationship({
-        meName: waOwnerName(),
-        contactName: contact.name || 'dia',
-        pairs: examples,
-      });
+      const text = await withAiConfig(ai, () =>
+        generateRelationship({
+          meName: waOwnerName(),
+          contactName: contact.name || 'dia',
+          pairs: examples,
+        }),
+      );
       if (text) {
         store.saveProfile(db, contact.jid, { relationship: text });
         return text;
@@ -1133,6 +1151,16 @@ export function createMessageHandler({ db, wa, bus }) {
       }
       emit({ type: 'log', message: `Kamu mengetik manual ke ${contact.name || number}.` });
       maybeRebuild(contact, raw.chatJid);
+      return;
+    }
+
+    const ai = resolveAi();
+    if (!ai) {
+      store.updateMessageStatus(db, raw.id, 'skipped', 'API key AI akun ini belum diatur');
+      emit({
+        type: 'error',
+        message: `API key AI belum diatur untuk ${waOwnerName()}. Buka Setting di dashboard.`,
+      });
       return;
     }
 

@@ -207,7 +207,7 @@ try {
 
   const contacts = await (await fetch(`${base}/api/contacts`)).json();
   const budi = contacts.find((c) => c.name === 'Budi');
-  check('kontak tersimpan', !!budi && budi.mode === 'draft', `mode=${budi?.mode}, sampel=${budi?.sampleCount}`);
+  check('kontak tersimpan', !!budi && budi.mode === 'auto', `mode=${budi?.mode}, sampel=${budi?.sampleCount}`);
 
   const patchRes = await fetch(`${base}/api/contacts/${encodeURIComponent(budi.jid)}`, {
     method: 'PATCH',

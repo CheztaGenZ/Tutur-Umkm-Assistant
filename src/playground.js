@@ -7,6 +7,7 @@ import { config } from './config.js';
 import * as store from './db.js';
 import { decide as defaultDecide, dayStart, hourStart } from './policy.js';
 import { generateReply as defaultGenerateReply } from './ai/prompt.js';
+import { withAiConfig } from './ai/context.js';
 import { searchKnowledge } from './knowledge.js';
 
 const SESSION_TTL_MS = 30 * 60 * 1000;
@@ -106,7 +107,7 @@ export function createPlayground({
     };
   }
 
-  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto', ownerId = defaultOwnerId, meName = config.me } = {}) {
+  async function chat({ sessionId, ip = 'unknown', personaJid, message, language = 'auto', ownerId = defaultOwnerId, meName = config.me, aiConfig = null } = {}) {
     const text = String(message || '').trim();
     if (!text) return { sessionId: null, reply: null, error: 'Pesan wajib diisi' };
     if (text.length > MAX_MESSAGE_CHARS)
@@ -146,7 +147,7 @@ export function createPlayground({
     const started = now();
     try {
       const knowledge = searchKnowledge(store.listKnowledge(db, { ownerId, activeOnly: true }), text, 3);
-      const result = await generateReply({
+      const result = await withAiConfig(aiConfig, () => generateReply({
         meName,
         contactName: contact.alias || contact.name || 'Pelanggan',
         style: parseStyle(contact.style_profile),
@@ -159,7 +160,7 @@ export function createPlayground({
         memory: contact.memory || null,
         knowledge,
         usageKind: 'playground',
-      });
+      }));
 
       const decision = decide({
         jid: personaJid,
@@ -222,7 +223,7 @@ export function createPlayground({
           needsOwner: result.needsOwner === true,
           ownerReason: result.ownerReason || '',
           sources,
-          model: config.ai.model,
+          model: aiConfig?.model || config.ai.model,
           latencyMs,
           turns: session.turns,
           orderId: order?.id || null,
@@ -250,7 +251,7 @@ export function createPlayground({
           needsOwner: false,
           ownerReason: '',
           sources: [],
-          model: config.ai.model,
+          model: aiConfig?.model || config.ai.model,
           latencyMs,
           turns: session.turns,
         },

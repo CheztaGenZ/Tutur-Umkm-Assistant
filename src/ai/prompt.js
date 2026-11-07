@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import { chatJson } from './client.js';
+import { currentAiConfig } from './context.js';
 import { formatKnowledgeBlock } from '../knowledge.js';
 import { glossFor } from './slang.js';
 import { loadSlangExtra } from './slangExtra.js';
@@ -505,7 +506,7 @@ export async function generateReply({
       { role: 'system', content: system },
       { role: 'user', content: userContent },
     ],
-    { temperature: config.ai.temperature, kind: usageKind },
+    { temperature: currentAiConfig().temperature, kind: usageKind },
   );
 
   const reply = typeof out.reply === 'string' ? out.reply.trim() : null;
@@ -538,7 +539,7 @@ export async function generateReply({
           { role: 'system', content: system },
           { role: 'user', content: retryContent },
         ],
-        { temperature: config.ai.temperature, kind: usageKind },
+        { temperature: currentAiConfig().temperature, kind: usageKind },
       );
       const r2 = clean(out2.reply);
       if (r2) {

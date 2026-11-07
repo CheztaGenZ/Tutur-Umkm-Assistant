@@ -63,7 +63,8 @@ Tutur keeps the answer inside the business data. When the data is missing, it sa
 | Payment delivery | The owner sets cash, QRIS, and bank transfer. A QRIS question returns the owner's QR image; a transfer question returns the saved bank details. |
 | Human handoff | Booking, order, complaint, and allergy messages become drafts. Spam is ignored. VIP contacts are never auto-replied. |
 | Decision trace | Every Coba Chat reply shows the policy verdict, intent, confidence, cited business data, model, and latency. |
-| Multi-account workspace | Email/password, Google, and Facebook sign-in. Each account has its own business profile, catalog, knowledge, and orders. |
+| Multi-account workspace | Email/password, Google, and Facebook sign-in. Each account has its own business profile, catalog, knowledge, orders, and AI provider settings. |
+| Account AI keys | Each signed-in account saves its own provider key in Setting. The server key is used only for the public demo and admin access. |
 
 ## How it works
 
@@ -213,6 +214,9 @@ proposal/       Bali DigiFest submission documents
 
 - WhatsApp transport is disabled during judging to avoid account risk. Coba Chat exercises the same AI and policy code.
 - One WhatsApp number belongs to one account per deployment. The first account that claims the connected number owns its chats, drafts, and replies. Other accounts keep their own business profile, catalog, knowledge, and orders, but cannot see or control that WhatsApp session.
+- A signed-in account needs its own AI provider key in Setting before Coba Chat or WhatsApp replies work. The public demo and admin view use the server key.
+- API keys are encrypted at rest with a key stored in `data/.app-secret`. Back up that file together with `app.db`, or saved keys cannot be decrypted.
+- New WhatsApp contacts start in auto mode. Booking, order, complaint, allergy, spam, and VIP rules still block or hold risky messages.
 - Chat history and style training still share one workspace. Business profiles, catalogs, knowledge, and orders are isolated per account.
 - Retrieval is keyword based. A larger catalog will need embeddings or a search index.
 - SQLite fits a single-tenant deployment. Multi-tenant SaaS would need Postgres.

@@ -1,4 +1,4 @@
-import { config } from '../config.js';
+import { currentAiConfig } from './context.js';
 import { recordUsage, normalizeUsage } from './usage.js';
 
 /**
@@ -22,8 +22,8 @@ export function hasMediaContent(messages = []) {
 /** Pilih model teks atau model gambar/video. */
 export function selectModel(
   messages,
-  textModel = config.ai.model,
-  visionModel = config.ai.visionModel,
+  textModel = currentAiConfig().model,
+  visionModel = currentAiConfig().visionModel,
 ) {
   return hasMediaContent(messages) && visionModel ? visionModel : textModel;
 }
@@ -53,7 +53,7 @@ export function redactSecrets(text, key) {
 async function postChat(
   messages,
   {
-    temperature = config.ai.temperature,
+    temperature = currentAiConfig().temperature,
     jsonMode = true,
     useThinking = true,
     useReasoning = true,
@@ -62,9 +62,10 @@ async function postChat(
     meta = {},
   } = {},
 ) {
-  const url = `${config.ai.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-  const isGoogle = /generativelanguage\.googleapis\.com/i.test(config.ai.baseUrl);
-  const primary = selectModel(messages);
+  const ai = currentAiConfig();
+  const url = `${ai.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const isGoogle = /generativelanguage\.googleapis\.com/i.test(ai.baseUrl);
+  const primary = selectModel(messages, ai.model, ai.visionModel);
   const models = [primary];
   if (isGoogle) {
     const fallback = googleFallbackModel(primary);
@@ -72,25 +73,25 @@ async function postChat(
   }
 
   const headers = { 'Content-Type': 'application/json' };
-  if (config.ai.apiKey) headers.Authorization = `Bearer ${config.ai.apiKey}`;
+  if (ai.apiKey) headers.Authorization = `Bearer ${ai.apiKey}`;
   let lastError = null;
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
-    const timeout = AbortSignal.timeout(config.ai.timeoutMs);
+    const timeout = AbortSignal.timeout(ai.timeoutMs);
     const body = {
       model,
       messages,
       temperature,
-      max_tokens: config.ai.maxTokens,
+      max_tokens: ai.maxTokens,
     };
     if (jsonMode) body.response_format = { type: 'json_object' };
 
     // DeepSeek menyalakan thinking secara default. Mode thinking memakan
     // lebih banyak token output (dan mengabaikan temperature).
-    if (useThinking && config.ai.thinking !== 'auto') {
-      body.thinking = { type: config.ai.thinking === 'on' ? 'enabled' : 'disabled' };
-      if (config.ai.thinking === 'on') body.reasoning_effort = config.ai.reasoningEffort;
+    if (useThinking && ai.thinking !== 'auto') {
+      body.thinking = { type: ai.thinking === 'on' ? 'enabled' : 'disabled' };
+      if (ai.thinking === 'on') body.reasoning_effort = ai.reasoningEffort;
     }
 
     // Gemini 3 tidak bisa mematikan thinking, tapi bisa dibuat seminimal mungkin.
@@ -116,7 +117,7 @@ async function postChat(
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      const safe = redactSecrets(text, config.ai.apiKey);
+      const safe = redactSecrets(text, ai.apiKey);
       const err = new AiError(`AI HTTP ${res.status}: ${safe.slice(0, 300)}`);
       err.status = res.status;
       err.body = safe;
@@ -131,7 +132,7 @@ async function postChat(
     recordUsage(data?.usage, {
       kind,
       model: meta.model || data?.model || model,
-      baseUrl: meta.baseUrl || config.ai.baseUrl,
+      baseUrl: meta.baseUrl || ai.baseUrl,
     });
     const content = data?.choices?.[0]?.message?.content;
     if (content) return content;

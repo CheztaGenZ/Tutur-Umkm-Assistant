@@ -30,7 +30,8 @@ const bus = new EventEmitter();
 bus.setMaxListeners(100);
 
 const wa = new WhatsAppClient({ dataDir });
-const handler = createMessageHandler({ db, wa, bus });
+const allowGlobalAi = config.demo.enabled && process.env.WA_ENABLED !== '1';
+const handler = createMessageHandler({ db, wa, bus, allowGlobalAi });
 const syncContacts = createContactSync({ db, bus });
 
 let repairTimer = null;

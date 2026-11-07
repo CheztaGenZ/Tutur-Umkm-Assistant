@@ -32,6 +32,8 @@ import {
   acceptTerms,
 } from './auth.js';
 import * as products from './products.js';
+import { aiConfigForOwner, aiInfoForOwner } from './ai/account.js';
+import { decryptSecret, encryptSecret } from './secrets.js';
 import AdmZip from 'adm-zip';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -230,6 +232,12 @@ export function createServer({ db, wa, bus }) {
       ? req.body.personaJid
       : DEMO_PERSONAS[0].jid;
     const ip = String(req.ip || 'unknown');
+    const aiConfig = req.user ? aiConfigForOwner(db, req.user.id) : config.ai;
+    if (req.user && !aiConfig) {
+      return res.status(400).json({
+        error: 'API key AI belum diatur untuk akun ini. Buka Setting di dashboard.',
+      });
+    }
     const result = await playground.chat({
       sessionId: req.body?.sessionId,
       ip,
@@ -238,6 +246,7 @@ export function createServer({ db, wa, bus }) {
       language: req.body?.language,
       ownerId: req.user?.id || 'demo',
       meName: req.user?.name || config.me,
+      aiConfig,
     });
     res.status(result.error && !result.trace ? 400 : 200).json(result);
   });
@@ -736,16 +745,17 @@ export function createServer({ db, wa, bus }) {
     }
     const day = new Date();
     day.setHours(0, 0, 0, 0);
+    const accountAi = req.user ? aiConfigForOwner(db, req.user.id) : null;
     res.json({
       wa: snapshot,
       paused: store.kvGet(db, 'paused') === '1',
       sentToday: ownedByMe ? store.countOutSince(db, day.getTime()) : 0,
-      aiReady: Boolean(config.ai.apiKey),
+      aiReady: req.user ? Boolean(accountAi) : Boolean(config.ai.apiKey),
       canWrite: isLocalRequest(req),
       config: {
         me: req.user?.name || config.me,
-        model: config.ai.model,
-        visionModel: config.ai.visionModel || '',
+        model: accountAi?.model || config.ai.model,
+        visionModel: accountAi?.visionModel || config.ai.visionModel || '',
         maxPerDay: config.safety.maxPerDay,
         maxPerHour: config.safety.maxPerHour,
         minGapPerContactSec: config.safety.minGapPerContactSec,
@@ -766,6 +776,22 @@ export function createServer({ db, wa, bus }) {
 
   app.get('/api/settings', (req, res) => {
     res.set('Cache-Control', 'no-store');
+    if (req.user) {
+      const info = aiInfoForOwner(db, req.user.id);
+      return res.json({
+        baseUrl: info.baseUrl || config.ai.baseUrl,
+        model: info.model || config.ai.model,
+        visionModel: info.visionModel || '',
+        thinking: info.thinking || 'off',
+        temperature: info.temperature,
+        maxTokens: info.maxTokens,
+        me: req.user.name,
+        hasApiKey: info.configured,
+        apiKeyMasked: info.apiKeyMasked,
+        canEdit: true,
+        account: true,
+      });
+    }
     const local = isLocalRequest(req);
     const data = getSettings();
     if (!local) {
@@ -776,6 +802,67 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.put('/api/settings', (req, res) => {
+    if (req.user) {
+      try {
+        const body = req.body || {};
+        const baseUrl = String(body.baseUrl || config.ai.baseUrl).trim();
+        let parsed;
+        try {
+          parsed = new URL(baseUrl);
+        } catch {
+          return res.status(400).json({ error: 'Base URL tidak valid' });
+        }
+        if (!/^https?:$/.test(parsed.protocol)) {
+          return res.status(400).json({ error: 'Base URL harus http atau https' });
+        }
+        const model = String(body.model || '').trim();
+        if (!model) return res.status(400).json({ error: 'Model wajib diisi' });
+        const visionModel = String(body.visionModel || '').trim();
+        const thinking = ['off', 'on', 'auto'].includes(body.thinking) ? body.thinking : 'off';
+        const temperature = Number(body.temperature ?? 0.8);
+        if (!Number.isFinite(temperature) || temperature < 0 || temperature > 2) {
+          return res.status(400).json({ error: 'Temperature harus antara 0 dan 2' });
+        }
+        const maxTokens = Math.round(Number(body.maxTokens ?? 2000));
+        if (!Number.isFinite(maxTokens) || maxTokens < 1 || maxTokens > 8000) {
+          return res.status(400).json({ error: 'Max token harus 1 sampai 8000' });
+        }
+        const existing = store.getAiSettings(db, req.user.id);
+        const existingKey = existing?.api_key
+          ? decryptSecret(existing.api_key, config.dataDir)
+          : '';
+        const inputKey = String(body.apiKey || '').trim();
+        const apiKey = inputKey || existingKey;
+        if (!apiKey) {
+          return res.status(400).json({ error: 'API key wajib diisi untuk akun ini.' });
+        }
+        store.saveAiSettings(db, req.user.id, {
+          baseUrl,
+          apiKey: encryptSecret(apiKey, config.dataDir),
+          model,
+          visionModel,
+          thinking,
+          temperature,
+          maxTokens,
+        });
+        const info = aiInfoForOwner(db, req.user.id);
+        return res.json({
+          baseUrl: info.baseUrl,
+          model: info.model,
+          visionModel: info.visionModel,
+          thinking: info.thinking,
+          temperature: info.temperature,
+          maxTokens: info.maxTokens,
+          me: req.user.name,
+          hasApiKey: info.configured,
+          apiKeyMasked: info.apiKeyMasked,
+          canEdit: true,
+          account: true,
+        });
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+    }
     if (!isLocalRequest(req)) {
       return res.status(403).json({ error: 'Pengaturan provider hanya bisa diubah dari PC.' });
     }
@@ -806,11 +893,27 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.post('/api/settings/test', async (req, res) => {
-    if (!isLocalRequest(req)) {
+    let payload = req.body || {};
+    if (req.user) {
+      const info = aiInfoForOwner(db, req.user.id);
+      const existing = store.getAiSettings(db, req.user.id);
+      const existingKey = existing?.api_key
+        ? decryptSecret(existing.api_key, config.dataDir)
+        : '';
+      payload = {
+        ...payload,
+        baseUrl: payload.baseUrl || info.baseUrl || config.ai.baseUrl,
+        model: payload.model || info.model || config.ai.model,
+        apiKey: payload.apiKey || existingKey,
+      };
+      if (!payload.apiKey) {
+        return res.status(400).json({ ok: false, error: 'API key akun ini belum diatur.' });
+      }
+    } else if (!isLocalRequest(req)) {
       return res.status(403).json({ error: 'Tes provider hanya bisa dijalankan dari PC.' });
     }
     try {
-      res.json(await testSettings(req.body || {}));
+      res.json(await testSettings(payload));
     } catch (err) {
       res.status(err.status || 500).json({ ok: false, error: err.message, status: err.status || null });
     }

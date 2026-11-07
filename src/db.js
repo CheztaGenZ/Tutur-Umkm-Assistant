@@ -200,6 +200,19 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS idx_orders_owner ON orders(owner_id, created_at);
 
+-- Pengaturan AI per akun. API key disimpan terenkripsi oleh lapisan server.
+CREATE TABLE IF NOT EXISTS ai_settings (
+  owner_id    TEXT PRIMARY KEY,
+  base_url    TEXT NOT NULL,
+  api_key     TEXT NOT NULL,
+  model       TEXT NOT NULL,
+  vision_model TEXT,
+  thinking    TEXT NOT NULL DEFAULT 'off',
+  temperature REAL NOT NULL DEFAULT 0.8,
+  max_tokens  INTEGER NOT NULL DEFAULT 2000,
+  updated_at  INTEGER NOT NULL
+);
+
 -- Event playground anonim. Tidak menyimpan isi percakapan.
 CREATE TABLE IF NOT EXISTS playground_events (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -329,7 +342,7 @@ export function upsertContact(db, { jid, number, name, importName }) {
   }
   db.prepare(
     `INSERT INTO contacts (jid, number, name, import_name, mode, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'draft', ?, ?)`,
+     VALUES (?, ?, ?, ?, 'auto', ?, ?)`,
   ).run(jid, number ?? null, name ?? null, importName ?? null, ts, ts);
   if (isFamilyName(name)) {
     db.prepare("UPDATE contacts SET register = 'keluarga' WHERE jid = ? AND register IN ('auto','sopan')").run(jid);
@@ -995,6 +1008,51 @@ export function listOrders(db, ownerId, limit = 100) {
   return db
     .prepare('SELECT * FROM orders WHERE owner_id = ? ORDER BY created_at DESC LIMIT ?')
     .all(String(ownerId), limit);
+}
+
+export function getAiSettings(db, ownerId) {
+  const row = db.prepare('SELECT * FROM ai_settings WHERE owner_id = ?').get(String(ownerId));
+  return row
+    ? {
+        owner_id: row.owner_id,
+        base_url: row.base_url,
+        api_key: row.api_key,
+        model: row.model,
+        vision_model: row.vision_model || '',
+        thinking: row.thinking || 'off',
+        temperature: Number(row.temperature),
+        max_tokens: Number(row.max_tokens),
+        updated_at: row.updated_at,
+      }
+    : null;
+}
+
+export function saveAiSettings(db, ownerId, data = {}) {
+  db.prepare(
+    `INSERT INTO ai_settings
+       (owner_id, base_url, api_key, model, vision_model, thinking, temperature, max_tokens, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(owner_id) DO UPDATE SET
+       base_url = excluded.base_url,
+       api_key = excluded.api_key,
+       model = excluded.model,
+       vision_model = excluded.vision_model,
+       thinking = excluded.thinking,
+       temperature = excluded.temperature,
+       max_tokens = excluded.max_tokens,
+       updated_at = excluded.updated_at`,
+  ).run(
+    String(ownerId),
+    String(data.baseUrl || '').trim(),
+    String(data.apiKey || '').trim(),
+    String(data.model || '').trim(),
+    String(data.visionModel || '').trim(),
+    String(data.thinking || 'off').trim(),
+    Number(data.temperature) || 0.8,
+    Math.max(1, Math.round(Number(data.maxTokens) || 2000)),
+    Date.now(),
+  );
+  return getAiSettings(db, ownerId);
 }
 
 export function updateOrderStatus(db, ownerId, id, status) {

@@ -66,7 +66,7 @@ const wa = {
   },
 };
 
-const handler = createMessageHandler({ db, wa, bus });
+const handler = createMessageHandler({ db, wa, bus, allowGlobalAi: true });
 
 const msg = (over = {}) => ({
   id: `m_${Math.random().toString(36).slice(2)}`,
