@@ -161,10 +161,9 @@ export function createPlayground({
       });
 
       const latencyMs = Math.max(0, now() - started);
-      const sources = (result.knowledgeUsed || [])
-        .map((id) => knowledge.find((k) => k.id === id))
-        .filter(Boolean)
-        .map((k) => ({ id: k.id, title: k.title, category: k.category }));
+      const cited = new Set(result.knowledgeUsed || []);
+      const chosen = cited.size ? knowledge.filter((k) => cited.has(k.id)) : knowledge;
+      const sources = chosen.map((k) => ({ id: k.id, title: k.title, category: k.category }));
 
       session.messages.push({ direction: 'in', body: text, ts: now() });
       if (result.reply) session.messages.push({ direction: 'out', body: result.reply, ts: now() });

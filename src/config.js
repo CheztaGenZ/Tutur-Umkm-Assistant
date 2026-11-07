@@ -85,8 +85,7 @@ export const config = {
   },
 };
 
-/** Parse "01:00-07:00" jadi dua menit-dalam-hari. Null kalau format salah atau dimatikan. */
-export function parseQuietHours(spec) {
+/** Parse "01:00-07:00" jadi dua menit-dalam-hari. Null kalau format salah atau dimatikan. */export function parseQuietHours(spec) {
   const raw = String(spec || '').trim();
   if (!raw || /^(off|none|-)$/i.test(raw)) return null;
   const m = raw.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);

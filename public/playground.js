@@ -17,6 +17,25 @@ const ACTION_LABEL = {
   error: 'error',
 };
 
+const INTENT_LABEL = {
+  tanya_fakta: 'Tanya fakta',
+  pesanan: 'Pesanan',
+  booking: 'Booking',
+  komplain: 'Komplain',
+  obrolan: 'Obrolan',
+  spam: 'Spam',
+  error: 'Gagal',
+};
+
+const CATEGORY_LABEL = {
+  menu: 'Menu',
+  jam: 'Jam buka',
+  lokasi: 'Lokasi',
+  kebijakan: 'Kebijakan',
+  layanan: 'Layanan',
+  umum: 'Umum',
+};
+
 function addBubble(kind, text, who) {
   const empty = $('#chat-empty');
   if (empty) empty.remove();
@@ -37,27 +56,28 @@ function renderTrace(trace) {
   $('#trace-empty').hidden = true;
   $('#trace').hidden = false;
 
-  const action = ACTION_LABEL[trace.action] || trace.action || '—';
+  const action = ACTION_LABEL[trace.action] || trace.action || '-';
   const pill = $('#trace-action');
   pill.textContent = action;
   pill.className = `action-pill ${trace.action || ''}`;
   $('#trace-reason').textContent = trace.policyReason || '';
 
-  $('#trace-intent').textContent = trace.intent || '—';
+  $('#trace-intent').textContent = INTENT_LABEL[trace.intent] || trace.intent || '-';
   $('#trace-confidence').textContent =
-    typeof trace.confidence === 'number' ? trace.confidence.toFixed(2) : '—';
+    typeof trace.confidence === 'number' ? `${Math.round(trace.confidence * 100)}%` : '-';
   $('#confidence-fill').style.width = `${Math.round((trace.confidence || 0) * 100)}%`;
-  $('#trace-model').textContent = trace.model || '—';
+  $('#trace-model').textContent = trace.model || '-';
   $('#trace-latency').textContent =
-    typeof trace.latencyMs === 'number' ? `${(trace.latencyMs / 1000).toFixed(2)}s` : '—';
+    typeof trace.latencyMs === 'number' ? `${(trace.latencyMs / 1000).toFixed(2)}s` : '-';
 
   const sources = $('#trace-sources');
   if (trace.sources?.length) {
     sources.innerHTML = trace.sources
-      .map(
-        (s) =>
-          `<span class="source"><b>${escapeHtml(s.category || 'data')}</b>${escapeHtml(s.title)}</span>`,
-      )
+      .map((s) => {
+        const cat = CATEGORY_LABEL[s.category] || s.category || 'Data';
+        const showCat = String(cat).toLowerCase() !== String(s.title).toLowerCase();
+        return `<span class="source">${showCat ? `<b>${escapeHtml(cat)}</b>` : ''}${escapeHtml(s.title)}</span>`;
+      })
       .join('');
   } else {
     sources.innerHTML = '<span class="source-empty">tidak ada sumber dipakai</span>';
@@ -85,6 +105,20 @@ async function loadConfig() {
   renderPersonas();
   renderScenarios();
   updateImpact(data.metrics);
+  updatePersonaLine();
+}
+
+function updatePersonaLine() {
+  const mode = state.persona.mode || 'baru';
+  const modeText =
+    mode === 'auto'
+      ? 'mode auto, Tutur boleh membalas sendiri'
+      : mode === 'draft'
+        ? 'mode draft, balasan menunggu pemilik'
+        : mode === 'ignore'
+          ? 'mode ignore, Tutur tidak membalas'
+          : 'nomor baru, balasan masuk draft';
+  $('#current-persona').textContent = `Kamu chat sebagai ${state.persona.label.toLowerCase()}, ${modeText}.`;
 }
 
 function renderPersonas() {
@@ -135,6 +169,7 @@ async function selectPersona(persona) {
   $('#language').value =
     state.language === 'en' || state.language === 'id' ? state.language : 'auto';
   renderPersonas();
+  updatePersonaLine();
   $('#chat').innerHTML =
     '<div class="chat-empty" id="chat-empty">Persona diganti. Mulai percakapan baru.</div>';
   $('#trace').hidden = true;
@@ -142,15 +177,32 @@ async function selectPersona(persona) {
   setTraceStatus('menunggu');
 }
 
+async function resetConversation() {
+  if (state.sessionId) {
+    await fetch('/api/public/playground/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: state.sessionId }),
+    }).catch(() => {});
+  }
+  state.sessionId = null;
+  $('#chat').innerHTML =
+    '<div class="chat-empty" id="chat-empty">Percakapan direset. Pilih skenario atau ketik pesan baru.</div>';
+  $('#trace').hidden = true;
+  $('#trace-empty').hidden = false;
+  setTraceStatus('menunggu');
+  $('#message').focus();
+}
+
 function updateImpact(metrics) {
   if (!metrics) return;
   const total = metrics.messages || 0;
   const autoPct = total ? Math.round(((metrics.auto || 0) / total) * 100) : 0;
-  $('#impact-auto').textContent = total ? `${autoPct}%` : '—';
-  $('#impact-escalated').textContent = metrics.escalated ?? '—';
+  $('#impact-auto').textContent = total ? `${autoPct}%` : '-';
+  $('#impact-escalated').textContent = metrics.escalated ?? '-';
   $('#impact-latency').textContent = metrics.avgLatencyMs
     ? `${(metrics.avgLatencyMs / 1000).toFixed(1)}s`
-    : '—';
+    : '-';
 }
 
 async function send() {
@@ -210,6 +262,8 @@ $('#composer').addEventListener('submit', (e) => {
   e.preventDefault();
   send();
 });
+
+$('#reset').addEventListener('click', resetConversation);
 
 $('#language').addEventListener('change', (e) => {
   state.language = e.target.value;

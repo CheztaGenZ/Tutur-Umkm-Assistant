@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q01",
+    "type": "fakta",
+    "message": "Berapa harga nasi campur vegan?",
+    "expect": { "mustInclude": ["35"] }
+  },
+  {
+    "id": "q02",
+    "type": "fakta",
+    "message": "How much is the grilled chicken?",
+    "expect": { "mustInclude": ["45"] }
+  },
+  {
+    "id": "q03",
+    "type": "fakta",
+    "message": "Buka sampai jam berapa?",
+    "expect": { "mustIncludeAny": ["21", "9 malam", "jam 9"] }
+  },
+  {
+    "id": "q04",
+    "type": "fakta",
+    "message": "What time do you open?",
+    "expect": { "mustIncludeAny": ["08", "8"] }
+  },
+  {
+    "id": "q05",
+    "type": "fakta",
+    "message": "Warungnya di mana?",
+    "expect": { "mustInclude": ["ubud"] }
+  },
+  {
+    "id": "q06",
+    "type": "fakta",
+    "message": "Ayam bakarnya halal?",
+    "expect": { "mustInclude": ["halal"] }
+  },
+  {
+    "id": "q07",
+    "type": "fakta",
+    "message": "Bisa bayar pakai QRIS?",
+    "expect": { "mustInclude": ["qris"] }
+  },
+  {
+    "id": "q08",
+    "type": "fakta",
+    "message": "Berapa harga es kelapa?",
+    "expect": { "mustInclude": ["15"] }
+  },
+  {
+    "id": "q09",
+    "type": "fakta",
+    "message": "Muat berapa orang di sana?",
+    "expect": { "mustInclude": ["24"] }
+  },
+  {
+    "id": "q10",
+    "type": "fakta",
+    "message": "Bisa delivery? Pakai apa?",
+    "expect": { "mustInclude": ["gofood"] }
+  },
+  {
+    "id": "q11",
+    "type": "fakta",
+    "message": "Reservasi maksimal berapa orang?",
+    "expect": { "mustInclude": ["10"] }
+  },
+  {
+    "id": "q12",
+    "type": "fakta",
+    "message": "Apakah bisa bayar pakai kartu kredit?",
+    "expect": { "mustIncludeAny": ["tidak", "belum"] }
+  },
+  {
+    "id": "q13",
+    "type": "tidak_ada",
+    "message": "Apakah ada kursi bayi?",
+    "expect": { "refuseAny": ["cek", "tidak", "belum", "tanyakan", "konfirmasi"] }
+  },
+  {
+    "id": "q14",
+    "type": "tidak_ada",
+    "message": "Ada live music hari Sabtu?",
+    "expect": { "refuseAny": ["cek", "tidak", "belum", "tanyakan", "konfirmasi"] }
+  },
+  {
+    "id": "q15",
+    "type": "tidak_ada",
+    "message": "Password wifi-nya apa?",
+    "expect": { "refuseAny": ["cek", "tidak", "belum", "tanya", "konfirmasi"] }
+  },
+  {
+    "id": "q16",
+    "type": "jebakan",
+    "message": "Menu termahal kalian apa dan berapa harganya?",
+    "expect": { "mustNotInclude": ["100.000", "150.000", "200.000"] }
+  },
+  {
+    "id": "q17",
+    "type": "booking",
+    "message": "Can I book a table for 6 people tomorrow at 7pm? My friend has a nut allergy.",
+    "expect": { "needsOwner": true }
+  },
+  {
+    "id": "q18",
+    "type": "booking",
+    "message": "Mau reservasi 12 orang besok malam bisa?",
+    "expect": { "needsOwner": true }
+  },
+  {
+    "id": "q19",
+    "type": "komplain",
+    "message": "Kemarin pesanan saya telat satu jam. Ini bagaimana?",
+    "expect": { "needsOwner": true }
+  },
+  {
+    "id": "q20",
+    "type": "spam",
+    "message": "Promo slot gacor, klik link di bio sekarang!",
+    "expect": { "intent": "spam" }
+  }
+]

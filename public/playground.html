@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tutur — AI Concierge untuk UMKM Bali</title>
+    <title>Tutur: AI Concierge untuk UMKM Bali</title>
     <meta
       name="description"
       content="Tutur membalas chat pelanggan seperti pemilik warung, menjawab dari data bisnis yang benar, dan tahu kapan harus diam."
@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/playground.css" />
@@ -26,50 +26,64 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="badge-demo">DEMO · data sintetis</span>
+        <span class="demo-note">Demo, data sintetis</span>
         <a class="back-link" href="/">Dashboard</a>
       </div>
     </header>
 
     <section class="intro">
       <div>
-        <p class="eyebrow">Judge Playground</p>
         <h2>Coba sendiri, tanpa login.</h2>
         <p class="lede">
-          Kamu berperan sebagai pelanggan <strong id="business-name">Sari Kitchen</strong> di Ubud. Kirim chat
-          dalam Bahasa Indonesia atau Inggris, lalu lihat <em>kenapa</em> AI memutuskan membalas, menahan,
-          atau diam.
+          Judge playground. Kamu jadi pelanggan <strong id="business-name">Sari Kitchen</strong> di Ubud.
+          Kirim chat dalam Bahasa Indonesia atau Inggris, lalu lihat kenapa Tutur membalas, menahan, atau
+          diam.
         </p>
       </div>
-      <div class="impact" id="impact" aria-label="Metrik dampak">
-        <div class="impact-card">
-          <span class="impact-value" id="impact-auto">—</span>
-          <span class="impact-label">dijawab otomatis</span>
+      <div>
+        <div class="impact" id="impact" aria-label="Metrik dampak">
+          <div class="impact-card">
+            <span class="impact-value" id="impact-auto">-</span>
+            <span class="impact-label">dijawab otomatis</span>
+          </div>
+          <div class="impact-card">
+            <span class="impact-value" id="impact-escalated">-</span>
+            <span class="impact-label">dieskalasi ke pemilik</span>
+          </div>
+          <div class="impact-card">
+            <span class="impact-value" id="impact-latency">-</span>
+            <span class="impact-label">rata-rata respons</span>
+          </div>
         </div>
-        <div class="impact-card">
-          <span class="impact-value" id="impact-escalated">—</span>
-          <span class="impact-label">dieskalasi ke pemilik</span>
-        </div>
-        <div class="impact-card">
-          <span class="impact-value" id="impact-latency">—</span>
-          <span class="impact-label">rata-rata respons</span>
-        </div>
+        <p class="impact-note" id="impact-note">Data simulasi 30 hari ditambah sesi yang kamu jalankan.</p>
       </div>
     </section>
 
     <main class="stage">
       <section class="panel chat-panel" aria-label="Simulasi chat pelanggan">
         <div class="panel-head">
-          <div>
-            <h3>Sebagai siapa kamu chat?</h3>
-            <p class="hint">Pilihan ini mengubah mode dan bahasa yang dipakai sistem.</p>
+          <div class="panel-title">
+            <span class="step" aria-hidden="true">1</span>
+            <div>
+              <h3>Pilih peran</h3>
+              <p class="hint">Setiap peran punya mode dan bahasa sendiri.</p>
+            </div>
           </div>
+          <button type="button" class="reset" id="reset">Mulai ulang</button>
         </div>
+
+        <p class="current-persona" id="current-persona">Kamu chat sebagai Turis asing, mode auto.</p>
 
         <div class="personas" id="personas" role="group" aria-label="Pilih persona"></div>
 
         <div class="scenarios">
-          <span class="scenarios-label">Skenario cepat</span>
+          <div class="scenarios-head">
+            <span class="step" aria-hidden="true">2</span>
+            <div>
+              <span class="scenarios-label">Kirim pesan</span>
+              <p class="hint">Pilih contoh di bawah, atau ketik sendiri.</p>
+            </div>
+          </div>
           <div id="scenarios" class="scenario-list"></div>
         </div>
 
@@ -100,63 +114,71 @@
 
       <aside class="panel trace-panel" aria-label="Decision trace">
         <div class="panel-head">
-          <div>
-            <h3>Decision trace</h3>
-            <p class="hint">Transparansi keputusan, bukan kotak hitam.</p>
+          <div class="panel-title">
+            <span class="step" aria-hidden="true">3</span>
+            <div>
+              <h3>Baca alasannya</h3>
+              <p class="hint">Di sini terlihat kenapa Tutur membalas, menahan, atau diam.</p>
+            </div>
           </div>
           <span class="trace-status" id="trace-status">menunggu</span>
         </div>
 
         <div class="trace-empty" id="trace-empty">
-          Kirim satu pesan untuk melihat alasan keputusan, sumber data, dan model yang dipakai.
+          <p class="trace-empty-title">Belum ada pesan.</p>
+          <ol class="trace-steps">
+            <li>Pilih peran di kolom kiri.</li>
+            <li>Kirim satu pesan.</li>
+            <li>Keputusan, sumber data, dan model muncul di sini.</li>
+          </ol>
         </div>
 
-        <div class="trace" id="trace" hidden>
+        <div class="trace" id="trace" hidden aria-live="polite">
           <div class="trace-action">
-            <span class="action-pill" id="trace-action">—</span>
+            <span class="action-pill" id="trace-action">-</span>
             <span class="trace-reason" id="trace-reason"></span>
           </div>
 
           <dl class="trace-grid">
             <div>
-              <dt>Intent</dt>
-              <dd id="trace-intent">—</dd>
+              <dt>Jenis pesan</dt>
+              <dd id="trace-intent">-</dd>
             </div>
             <div>
-              <dt>Confidence</dt>
+              <dt>Keyakinan</dt>
               <dd>
-                <span id="trace-confidence">—</span>
+                <span id="trace-confidence">-</span>
                 <span class="confidence-bar"><span id="confidence-fill"></span></span>
               </dd>
             </div>
             <div>
               <dt>Model</dt>
-              <dd id="trace-model">—</dd>
+              <dd id="trace-model">-</dd>
             </div>
             <div>
-              <dt>Latency</dt>
-              <dd id="trace-latency">—</dd>
+              <dt>Waktu jawab</dt>
+              <dd id="trace-latency">-</dd>
             </div>
           </dl>
 
           <div class="trace-block">
-            <span class="trace-label">Sumber data bisnis</span>
+            <span class="trace-label">Data bisnis yang relevan</span>
             <div class="sources" id="trace-sources">
               <span class="source-empty">tidak ada sumber dipakai</span>
             </div>
           </div>
 
           <div class="trace-block" id="owner-block" hidden>
-            <span class="trace-label">Kenapa perlu pemilik</span>
+            <span class="trace-label">Kenapa ditahan untuk pemilik</span>
             <p class="owner-reason" id="trace-owner"></p>
           </div>
 
           <div class="trace-block">
-            <span class="trace-label">Arti keputusan</span>
+            <span class="trace-label">Arti status</span>
             <ul class="legend">
-              <li><span class="dot dot-auto"></span> <strong>auto</strong> — aman dikirim tanpa menunggu.</li>
-              <li><span class="dot dot-draft"></span> <strong>draft</strong> — ditahan untuk disetujui pemilik.</li>
-              <li><span class="dot dot-ignore"></span> <strong>ignore</strong> — sengaja tidak dibalas.</li>
+              <li><span class="dot dot-auto"></span> <strong>auto</strong>: aman dikirim tanpa menunggu.</li>
+              <li><span class="dot dot-draft"></span> <strong>draft</strong>: ditahan untuk disetujui pemilik.</li>
+              <li><span class="dot dot-ignore"></span> <strong>ignore</strong>: sengaja tidak dibalas.</li>
             </ul>
           </div>
         </div>

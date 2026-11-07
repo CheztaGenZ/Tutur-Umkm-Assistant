@@ -44,6 +44,9 @@ export function decide({
   paused = false,
   counts = { day: 0, hour: 0, contactToday: 0, lastContactSentAt: 0 },
   now = new Date(),
+  needsOwner = false,
+  ownerReason = '',
+  intent = 'obrolan',
 }) {
   const ignore = (reason) => ({ action: 'ignore', reason });
   const draft = (reason) => ({ action: 'draft', reason });
@@ -57,6 +60,9 @@ export function decide({
   // Kontak yang ditandai "jangan dijawab" — mutlak, tidak ada pengecualian.
   if (contact?.mode === 'ignore') return ignore('Kontak ditandai JANGAN dibalas.');
   if (isVip(contact)) return ignore('Nomor VIP (dari .env) — tidak dibalas.');
+
+  // Spam tidak pernah dibalas, bahkan untuk kontak baru atau kontak draft.
+  if (intent === 'spam') return ignore('Spam/promosi — sengaja tidak dibalas.');
 
   if (!contact) return draft('Kontak baru/belum dikenal — masuk draft dulu.');
   if (contact.mode === 'draft') return draft('Kontak di mode draft — butuh persetujuanmu.');
@@ -76,6 +82,10 @@ export function decide({
         )}s lalu, jeda ${config.safety.minGapPerContactSec}s). Masuk draft dulu, biar tidak terkesan spam.`,
       );
   }
+
+  // Eskalasi mengalahkan auto, tetapi tidak pernah mengubah ignore menjadi draft.
+  if (needsOwner)
+    return draft(`Butuh pemilik: ${ownerReason || 'pesan berisiko, perlu keputusan manusia'}.`);
 
   return { action: 'auto', reason: 'Kontak di mode auto, semua batas aman.' };
 }

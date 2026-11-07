@@ -83,6 +83,30 @@ function examplesBlock(examples, contactName, meName) {  if (!examples?.length) 
  *   3. few-shot (pasangan chat asli)
  */
 const INTENTS = ['tanya_fakta', 'pesanan', 'booking', 'komplain', 'obrolan', 'spam'];
+const RISKY_INTENTS = new Set(['pesanan', 'booking', 'komplain']);
+
+const COMPLAINT_RE = /\b(komplain|complaint|telat|terlambat|late|salah|wrong|dingin|cold|kecewa|refund|uang kembali|sakit|food poisoning)/i;
+const BOOKING_RE = /\b(book|reserv|table|meja|seat|kursi untuk|datang \d+|alergi|allerg|nut|kacang|rombongan|group of)/i;
+const ORDER_RE = /\b(pesan|order|delivery|antar|gofood|take ?away|bungkus)/i;
+
+/** Penjaga deterministik: model kecil sering salah label pesan berisiko. */
+export function detectRiskyIntent(message) {
+  const text = String(message || '');
+  if (COMPLAINT_RE.test(text)) return 'komplain';
+  if (BOOKING_RE.test(text)) return 'booking';
+  if (ORDER_RE.test(text)) return 'pesanan';
+  return null;
+}
+
+/** Aturan keselamatan yang tidak boleh bergantung pada kepatuhan model. */
+export function applyIntentGuards({ intent, needsOwner, reply }) {
+  const safeIntent = normalizeIntent(intent);
+  return {
+    intent: safeIntent,
+    needsOwner: needsOwner === true || RISKY_INTENTS.has(safeIntent),
+    reply: safeIntent === 'spam' ? null : reply,
+  };
+}
 
 /** Paksa intent ke daftar yang dikenal; default obrolan. */
 export function normalizeIntent(value) {
@@ -133,8 +157,8 @@ function buildBusinessPrompt({
 2. Ikuti bahasa pelanggan: Indonesia atau Inggris. Santai, ramah, dan pendek (maksimal ${maxBubbles} baris, tiap baris maksimal 12 kata).
 3. Fakta (harga, menu, jam, lokasi, kebijakan) HANYA dari SUMBER DATA BISNIS. JANGAN mengarang angka, jam, atau alamat.
 4. Kalau faktanya tidak ada di sumber, jangan menebak. Bilang akan cek ke pemilik, confidence <= 0.4, needs_owner true.
-5. Pesanan, booking, reservasi, komplain, alergi, permintaan khusus, atau urusan uang: needs_owner true. Balasan tetap sopan dan menunggu konfirmasi pemilik.
-6. Spam, promosi, atau penipuan: reply null, intent spam.
+5. Pesanan, booking, reservasi, komplain, alergi, permintaan khusus, atau urusan uang: WAJIB set needs_owner true, walaupun kamu tidak bisa menjawab atau balasanmu kosong. Jangan pernah mengonfirmasi ketersediaan, harga final, atau kompensasi.
+6. Spam, promosi, tautan mencurigakan, atau pesan yang tidak relevan dengan warung: reply null dan intent WAJIB "spam".
 7. Jangan menjanjikan hal yang tidak ada di sumber (diskon, ketersediaan meja, kompensasi, antar gratis).
 8. Sapaan hangat boleh, tapi jangan bertele-tele dan jangan menawarkan banyak hal sekaligus.
 
@@ -479,14 +503,30 @@ export async function generateReply({
     }
   }
 
-  return {
+  const guarded = applyIntentGuards({
+    intent: out.intent,
+    needsOwner: out.needs_owner === true,
     reply: finalReply,
+  });
+
+  // Jaring pengaman: pesan booking/komplain tidak boleh lolos sebagai auto
+  // hanya karena model kecil salah memberi label intent.
+  const detected = guarded.intent === 'spam' ? null : detectRiskyIntent(lastIn?.body);
+  const finalIntent = detected && !RISKY_INTENTS.has(guarded.intent) ? detected : guarded.intent;
+  const finalGuarded = applyIntentGuards({
+    intent: finalIntent,
+    needsOwner: guarded.needsOwner || Boolean(detected),
+    reply: guarded.reply,
+  });
+
+  return {
+    reply: finalGuarded.reply,
     confidence: finalConfidence,
     sticker: typeof out.sticker === 'string' ? out.sticker.trim() : null,
     attachActivity: out.attach_activity === true,
     reason: finalReason,
-    intent: normalizeIntent(out.intent),
-    needsOwner: out.needs_owner === true,
+    intent: finalGuarded.intent,
+    needsOwner: finalGuarded.needsOwner,
     ownerReason: String(out.owner_reason || '').slice(0, 200),
     knowledgeUsed: normalizeSources(out.used_sources),
   };

@@ -17,6 +17,7 @@ const db = openDb(dataDir);
 setUsageSink((row) => recordAiUsage(db, row));
 
 if (config.demo.enabled) {
+  config.me = process.env.DEMO_OWNER || 'Sari';
   const seeded = seedDemo({ db });
   if (seeded.contacts || seeded.knowledge) {
     console.log(

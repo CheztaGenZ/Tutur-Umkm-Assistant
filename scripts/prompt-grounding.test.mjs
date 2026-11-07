@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildSystemPrompt, normalizeIntent } from '../src/ai/prompt.js';
+import { buildSystemPrompt, normalizeIntent, applyIntentGuards, detectRiskyIntent } from '../src/ai/prompt.js';
 
 const knowledge = [
   {
@@ -43,5 +43,21 @@ assert.equal(normalizeIntent('booking'), 'booking');
 assert.equal(normalizeIntent('TANYA_FAKTA'), 'tanya_fakta');
 assert.equal(normalizeIntent('halo apa kabar'), 'obrolan');
 assert.equal(normalizeIntent(undefined), 'obrolan');
+
+const spam = applyIntentGuards({ intent: 'spam', needsOwner: false, reply: 'klik link' });
+assert.equal(spam.reply, null);
+assert.equal(spam.intent, 'spam');
+
+const booking = applyIntentGuards({ intent: 'booking', needsOwner: false, reply: 'oke' });
+assert.equal(booking.needsOwner, true);
+
+const normal = applyIntentGuards({ intent: 'tanya_fakta', needsOwner: false, reply: '35k' });
+assert.equal(normal.needsOwner, false);
+assert.equal(normal.reply, '35k');
+
+assert.equal(detectRiskyIntent('Can I book a table for 6 people?'), 'booking');
+assert.equal(detectRiskyIntent('Mau reservasi 12 orang besok'), 'booking');
+assert.equal(detectRiskyIntent('Kemarin pesanan saya telat satu jam'), 'komplain');
+assert.equal(detectRiskyIntent('Berapa harga nasi campur?'), null);
 
 console.log('grounding ok');
