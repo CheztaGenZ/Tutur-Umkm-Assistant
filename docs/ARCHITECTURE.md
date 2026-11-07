@@ -25,8 +25,9 @@ flowchart TD
 
 | Component | File | Responsibility |
 |---|---|---|
+| WhatsApp manager | `src/wa/manager.js` | One Baileys client per account, auth under `data/wa/<ownerId>/auth` |
 | WhatsApp client | `src/wa/client.js` | Baileys socket, QR, text/media/status sending, privacy sync |
-| Handler | `src/wa/handler.js` | Receive messages, call AI, record orders, choose auto/draft/ignore |
+| Handler | `src/wa/handler.js` | Receive messages, call AI, record orders, choose auto/draft/ignore per account |
 | Policy | `src/policy.js` | Quotas, cooldowns, quiet hours, VIP, contact mode |
 | AI client | `src/ai/client.js` | OpenAI-compatible requests, fallbacks, usage |
 | Prompt | `src/ai/prompt.js` | Persona, relationship card, few-shot, grounding, output rules |
@@ -62,11 +63,13 @@ data/
 ```
 
 Main tables: `users`, `sessions`, `business_profiles`, `products`, `orders`,
-`contacts`, `messages`, `drafts`, `examples`, `knowledge`, `wa_contacts`,
-`group_samples`, `activities`, `status_jobs`, `status_send_log`, `ai_usage`, `kv`.
+`ai_settings`, `contacts`, `messages`, `drafts`, `examples`, `knowledge`,
+`wa_contacts`, `group_samples`, `activities`, `status_jobs`, `status_send_log`,
+`ai_usage`, `kv`.
 
-Business profile, products, knowledge, and orders are scoped by `owner_id`.
-Chat history and style training still use one workspace in this MVP.
+Business profile, products, knowledge, orders, AI settings, contacts, messages,
+drafts, examples, activities, and status jobs are scoped by `owner_id`.
+Each account has its own WhatsApp auth folder at `data/wa/<ownerId>/auth`.
 
 ## Trust boundaries
 

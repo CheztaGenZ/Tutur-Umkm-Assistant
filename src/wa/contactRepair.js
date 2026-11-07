@@ -8,23 +8,24 @@ import { normalizePnJid, pnNumber } from './jid.js';
 
 let repairing = null;
 
-export async function repairLidContacts({ db, wa, bus }, { limit = 200 } = {}) {
+export async function repairLidContacts({ db, wa, bus, ownerId = 'demo' }, { limit = 200 } = {}) {
   if (repairing) return 0;
   if (typeof wa?.resolvePn !== 'function') return 0;
 
   repairing = (async () => {
     const rows = db
       .prepare(
-        "SELECT jid, name, number FROM contacts WHERE jid LIKE '%@lid' ORDER BY last_seen_at DESC LIMIT ?",
+        "SELECT jid, name, number FROM contacts WHERE owner_id = ? AND jid LIKE '%@lid' ORDER BY last_seen_at DESC LIMIT ?",
       )
-      .all(limit);
+      .all(String(ownerId), limit);
 
     let fixed = 0;
     for (const row of rows) {
       const pn = normalizePnJid(await wa.resolvePn(row.jid));
       if (!pn) continue;
 
-      const pnName = store.getWaName(db, pn) || store.getContact(db, pn)?.name || null;
+      const pnName =
+        store.getWaName(db, pn) || store.getContact(db, pn, ownerId)?.name || null;
       const number = pnNumber(pn);
       const generic =
         !row.name ||
@@ -37,6 +38,7 @@ export async function repairLidContacts({ db, wa, bus }, { limit = 200 } = {}) {
       const nextName = generic && pnName ? pnName : row.name;
       if ((generic && pnName) || row.number !== number) {
         store.upsertContact(db, {
+          ownerId,
           jid: row.jid,
           name: nextName,
           number,

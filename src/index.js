@@ -3,7 +3,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import { openDb, recordAiUsage } from './db.js';
 import { setUsageSink } from './ai/usage.js';
-import { WhatsAppClient } from './wa/client.js';
+import { WhatsAppManager } from './wa/manager.js';
 import { createMessageHandler, createContactSync, createHistoryIngest } from './wa/handler.js';
 import { repairLidContacts } from './wa/contactRepair.js';
 import { watchInbox } from './ingest/autoimport.js';
@@ -29,65 +29,101 @@ if (config.demo.enabled) {
 const bus = new EventEmitter();
 bus.setMaxListeners(100);
 
-const wa = new WhatsAppClient({ dataDir });
-const allowGlobalAi = config.demo.enabled && process.env.WA_ENABLED !== '1';
-const handler = createMessageHandler({ db, wa, bus, allowGlobalAi });
-const syncContacts = createContactSync({ db, bus });
+const wa = new WhatsAppManager({ dataDir });
+const handlers = new Map();
+const contactSyncs = new Map();
+const historyIngests = new Map();
 
-let repairTimer = null;
-function scheduleContactRepair() {
-  clearTimeout(repairTimer);
-  repairTimer = setTimeout(() => {
-    repairLidContacts({ db, wa, bus }).catch((err) => {
-      bus.emit('event', { type: 'error', message: `Perbaikan kontak LID: ${err.message}` });
-    });
-  }, 3000);
+function clientFor(ownerId) {
+  return wa.client(ownerId);
 }
 
-wa.on('contacts', (list) => {
+function handlerFor(ownerId) {
+  let handler = handlers.get(ownerId);
+  if (!handler) {
+    handler = createMessageHandler({ db, wa: clientFor(ownerId), bus, ownerId });
+    handlers.set(ownerId, handler);
+  }
+  return handler;
+}
+
+function contactSyncFor(ownerId) {
+  let sync = contactSyncs.get(ownerId);
+  if (!sync) {
+    sync = createContactSync({ db, bus, ownerId });
+    contactSyncs.set(ownerId, sync);
+  }
+  return sync;
+}
+
+function historyIngestFor(ownerId) {
+  let ingest = historyIngests.get(ownerId);
+  if (!ingest) {
+    ingest = createHistoryIngest({ db, wa: clientFor(ownerId), bus, ownerId });
+    historyIngests.set(ownerId, ingest);
+  }
+  return ingest;
+}
+
+const repairTimers = new Map();
+function scheduleContactRepair(ownerId) {
+  clearTimeout(repairTimers.get(ownerId));
+  repairTimers.set(
+    ownerId,
+    setTimeout(() => {
+      repairLidContacts({ db, wa: clientFor(ownerId), bus, ownerId }).catch((err) => {
+        bus.emit('event', { type: 'error', ownerId, message: `Perbaikan kontak LID: ${err.message}` });
+      });
+    }, 3000),
+  );
+}
+
+wa.on('contacts', ({ ownerId, payload }) => {
   try {
-    syncContacts(list);
-    scheduleContactRepair();
+    contactSyncFor(ownerId)(payload);
+    scheduleContactRepair(ownerId);
   } catch (err) {
     console.error('Sinkronisasi kontak gagal:', err.message);
   }
 });
 
-wa.on('ready', scheduleContactRepair);
+wa.on('state', ({ ownerId, payload }) => {
+  bus.emit('event', { type: 'wa', ownerId, state: payload });
+  if (payload.status === 'open') {
+    console.log(
+      `  WhatsApp ${ownerId}: terhubung sebagai ${payload.me?.name || payload.me?.number || '?'}`,
+    );
+  } else if (payload.status === 'qr') {
+    console.log(`  WhatsApp ${ownerId}: belum login, buka dashboard untuk scan QR.`);
+  }
+});
 
-// Lawan bicara sedang mengetik lagi -> tunda balasan (bubble bersambung).
-wa.on('presence', (payload = {}) => {
+wa.on('presence', ({ ownerId, payload = {} }) => {
+  const handler = handlerFor(ownerId);
   const presences = payload.presences || {};
   for (const [jid, p] of Object.entries(presences)) {
     if (p?.lastKnownPresence === 'composing') handler.notePresence(jid, 'composing');
   }
 });
 
-const ingestHistory = createHistoryIngest({ db, wa, bus });
-wa.on('history', (payload) => {
-  ingestHistory(payload).catch((err) => {
-    bus.emit('event', { type: 'error', message: `Gagal menyerap riwayat: ${err.message}` });
+wa.on('history', ({ ownerId, payload }) => {
+  historyIngestFor(ownerId)(payload).catch((err) => {
+    bus.emit('event', { type: 'error', ownerId, message: `Gagal menyerap riwayat: ${err.message}` });
   });
 });
 
-wa.on('message', (msg) => {
-  handler.handle(msg).catch((err) => {
-    bus.emit('event', { type: 'error', message: err.message });
-  });
+wa.on('message', ({ ownerId, payload }) => {
+  handlerFor(ownerId)
+    .handle(payload)
+    .catch((err) => {
+      bus.emit('event', { type: 'error', ownerId, message: err.message });
+    });
 });
 
-wa.on('state', (state) => {
-  bus.emit('event', { type: 'wa', state });
-  if (state.status === 'open') {
-    console.log(`✓ WhatsApp terhubung sebagai ${state.me?.name || state.me?.number || '?'}`);
-  } else if (state.status === 'qr') {
-    console.log('→ Belum login. Buka dashboard untuk scan QR.');
-  }
-});
-
-wa.on('error', (err) => {
-  console.error('✗ WA:', err.message);
-  bus.emit('event', { type: 'error', message: err.message });
+wa.on('error', ({ ownerId, payload }) => {
+  const message = payload?.message || String(payload);
+  console.error(`  WA ${ownerId}:`, message);
+  bus.emit('event', { type: 'error', ownerId, message });
 });
 
 const app = createServer({ db, wa, bus });
@@ -103,18 +139,18 @@ const server = app.listen(config.port, bindHost, () => {
   console.log(`  Inbox     : ${path.resolve(inboxDir)}  (taruh .zip di sini, auto-import)`);
   console.log('');
   if (!config.ai.apiKey) {
-    console.warn('  ⚠ AI_API_KEY belum diisi — balasan tidak akan bisa dibuat.');
+    console.warn('  AI_API_KEY server belum diisi. Akun tetap bisa memakai key masing-masing.');
   }
 });
 
-// Folder auto-import: taruh file export di sini, tidak perlu buka dashboard.
 watchInbox({ db, bus, dir: inboxDir });
 
-// Worker status terjadwal: cek tiap 30 detik.
 setInterval(() => {
-  processStatusJobs({ db, wa, bus }).catch((err) => {
-    bus.emit('event', { type: 'error', message: `Worker status: ${err.message}` });
-  });
+  for (const ownerId of wa.clients.keys()) {
+    processStatusJobs({ db, wa: clientFor(ownerId), bus, ownerId }).catch((err) => {
+      bus.emit('event', { type: 'error', ownerId, message: `Worker status: ${err.message}` });
+    });
+  }
 }, 30000);
 
 if (config.demo.enabled && process.env.WA_ENABLED !== '1') {
@@ -122,14 +158,14 @@ if (config.demo.enabled && process.env.WA_ENABLED !== '1') {
 } else if (process.env.WA_DISABLED === '1') {
   console.log('  WhatsApp : dimatikan (WA_DISABLED=1)');
 } else {
-  wa.start().catch((err) => {
+  wa.startAll().catch((err) => {
     console.error('Gagal memulai WhatsApp:', err.message);
   });
 }
 
 async function shutdown() {
   console.log('\nMematikan...');
-  await wa.stop();
+  await wa.stopAll();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 3000);
 }

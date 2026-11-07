@@ -19,11 +19,12 @@
 - [x] Payment settings, QRIS delivery, and bank details
 - [x] Order capture with done, cancelled, and reopen controls
 - [x] Per-account business profile, catalog, knowledge, and orders
+- [x] Per-account WhatsApp connection, chat history, drafts, and style training
 - [x] 42 security checks and CI
 
 ## Next
 
-- [ ] Per-account chat history and style training
+- [ ] WhatsApp reconnection health check per account
 - [ ] QRIS image when the owner approves a payment draft
 - [ ] Order notification for the owner
 - [ ] Embeddings or a search index for large catalogs

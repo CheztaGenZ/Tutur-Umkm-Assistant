@@ -7,28 +7,44 @@ process.env.DEMO_MODE = '1';
 process.env.ADMIN_TOKEN = 'test-token';
 process.env.WA_DISABLED = '1';
 
-const { openDb } = await import('../src/db.js');
+const { openDb, upsertContact } = await import('../src/db.js');
 const { createServer } = await import('../src/server.js');
 
-const dir = path.resolve('data-waownertest');
+const dir = path.resolve('data-multitenanttest');
 fs.rmSync(dir, { recursive: true, force: true });
 const db = openDb(dir);
 
-const bus = new EventEmitter();
-const wa = {
-  snapshot: () => ({
-    status: 'open',
-    qr: null,
-    me: { number: '628111111111', name: 'Toko Uji' },
-    lastError: null,
-    since: Date.now(),
-  }),
-  sendText: async () => {},
-  restartFresh: async () => {},
-  start: async () => {},
-  statusPrivacy: null,
+// Manager tiruan: setiap akun punya snapshot sendiri.
+const clients = new Map();
+const started = [];
+function fakeClient(number) {
+  return {
+    snapshot: () => ({
+      status: 'open',
+      qr: null,
+      me: { number },
+      lastError: null,
+      since: Date.now(),
+    }),
+    statusPrivacy: null,
+    start: async () => started.push(number),
+    restartFresh: async () => started.push(`restart:${number}`),
+  };
+}
+
+const fakeManager = {
+  client(ownerId) {
+    return clients.get(String(ownerId));
+  },
+  snapshot(ownerId) {
+    return clients.get(String(ownerId)).snapshot();
+  },
+  start: async (ownerId) => clients.get(String(ownerId)).start(),
+  restartFresh: async (ownerId) => clients.get(String(ownerId)).restartFresh(),
 };
-const app = createServer({ db, wa, bus });
+
+const bus = new EventEmitter();
+const app = createServer({ db, wa: fakeManager, bus });
 const server = app.listen(0, '127.0.0.1');
 await new Promise((r) => server.once('listening', r));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -48,68 +64,43 @@ async function register(email, name) {
     acceptedTerms: true,
   });
   assert.equal(res.status, 200);
-  return res.headers.getSetCookie()[0].split(';')[0];
+  const body = await res.json();
+  return { cookie: res.headers.getSetCookie()[0].split(';')[0], user: body.user };
 }
 
-const cookieA = await register('owner-a@example.com', 'Pemilik A');
-const cookieB = await register('owner-b@example.com', 'Pemilik B');
+const a = await register('owner-a@example.com', 'Pemilik A');
+const b = await register('owner-b@example.com', 'Pemilik B');
 
-// Profil usaha dipakai untuk memastikan data akun tetap terpisah.
-for (const [cookie, name] of [
-  [cookieA, 'Toko A'],
-  [cookieB, 'Toko B'],
-]) {
-  const res = await post('/api/business', { name, category: 'Toko', contact: '0812' }, cookie);
-  assert.equal(res.status, 200);
-}
+// Setiap akun melihat koneksi WhatsApp miliknya sendiri.
+clients.set(a.user.id, fakeClient('628111111111'));
+clients.set(b.user.id, fakeClient('628222222222'));
+const statusA = await (await fetch(`${base}/api/status`, { headers: { cookie: a.cookie } })).json();
+const statusB = await (await fetch(`${base}/api/status`, { headers: { cookie: b.cookie } })).json();
+assert.equal(statusA.wa.me.number, '628111111111');
+assert.equal(statusB.wa.me.number, '628222222222');
 
-// Sebelum diklaim, nomor terlihat sebagai belum terikat dan data chat disembunyikan.
-const statusA = await (await fetch(`${base}/api/status`, { headers: { cookie: cookieA } })).json();
-assert.equal(statusA.wa.status, 'open');
-assert.equal(statusA.wa.claimed, false);
-assert.equal(statusA.wa.ownedByMe, true);
-const contactsBefore = await (await fetch(`${base}/api/contacts`, { headers: { cookie: cookieA } })).json();
-assert.deepEqual(contactsBefore, []);
+// Kontak dan draft terpisah per akun.
+upsertContact(db, {
+  ownerId: a.user.id,
+  jid: '628999@s.whatsapp.net',
+  number: '628999',
+  name: 'Pelanggan A',
+});
+const contactsA = await (await fetch(`${base}/api/contacts`, { headers: { cookie: a.cookie } })).json();
+const contactsB = await (await fetch(`${base}/api/contacts`, { headers: { cookie: b.cookie } })).json();
+assert.equal(contactsA.length, 1);
+assert.equal(contactsA[0].name, 'Pelanggan A');
+assert.equal(contactsB.length, 0);
 
-// Akun A mengklaim nomor.
-const claim = await post('/api/wa/claim', {}, cookieA);
-assert.equal(claim.status, 200);
+// Koneksi tiap akun tidak saling mengunci.
+assert.equal((await post('/api/wa/connect', {}, a.cookie)).status, 200);
+assert.equal((await post('/api/wa/connect', {}, b.cookie)).status, 200);
+assert.deepEqual(started, ['628111111111', '628222222222']);
 
-// Akun A adalah pemilik.
-const statusA2 = await (await fetch(`${base}/api/status`, { headers: { cookie: cookieA } })).json();
-assert.equal(statusA2.wa.claimed, true);
-assert.equal(statusA2.wa.ownedByMe, true);
-
-// Akun B tidak melihat nomor atau data chat akun A.
-const statusB = await (await fetch(`${base}/api/status`, { headers: { cookie: cookieB } })).json();
-assert.equal(statusB.wa.status, 'idle');
-assert.equal(statusB.wa.claimed, true);
-assert.equal(statusB.wa.ownedByMe, false);
-assert.equal(statusB.sentToday, 0);
-const contactsB = await (await fetch(`${base}/api/contacts`, { headers: { cookie: cookieB } })).json();
-assert.deepEqual(contactsB, []);
-
-// Akun B tidak bisa mengambil alih atau memutus nomor.
-assert.equal((await post('/api/wa/claim', {}, cookieB)).status, 409);
-assert.equal((await post('/api/wa/connect', {}, cookieB)).status, 409);
-assert.equal((await post('/api/wa/logout', {}, cookieB)).status, 403);
-
-// Pemilik bisa memutus, lalu nomor terbuka untuk klaim berikutnya.
-assert.equal((await post('/api/wa/logout', {}, cookieA)).status, 200);
-
-// Nomor yang cocok dengan kontak profil usaha diikat otomatis.
-const cookieC = await register('owner-c@example.com', 'Pemilik C');
-const businessC = await post(
-  '/api/business',
-  { name: 'Toko C', category: 'Toko', contact: '08111111111' },
-  cookieC,
-);
-assert.equal(businessC.status, 200);
-const statusC = await (await fetch(`${base}/api/status`, { headers: { cookie: cookieC } })).json();
-assert.equal(statusC.wa.claimed, true);
-assert.equal(statusC.wa.ownedByMe, true);
+// Tidak ada lagi endpoint klaim nomor global.
+assert.equal((await post('/api/wa/claim', {}, a.cookie)).status, 404);
 
 server.close();
 db.close();
 fs.rmSync(dir, { recursive: true, force: true });
-console.log('wa owner ok');
+console.log('multi tenant whatsapp ok');

@@ -7,23 +7,26 @@ PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS contacts (
-  jid            TEXT PRIMARY KEY,
+  owner_id       TEXT NOT NULL DEFAULT 'demo',
+  jid            TEXT NOT NULL,
   number         TEXT,
   name           TEXT,
   import_name    TEXT,
-  mode           TEXT NOT NULL DEFAULT 'draft',
+  mode           TEXT NOT NULL DEFAULT 'auto',
   style_profile  TEXT,
   relationship   TEXT,
   sample_count   INTEGER NOT NULL DEFAULT 0,
   last_seen_at   INTEGER,
   profiled_at    INTEGER,
   created_at     INTEGER NOT NULL,
-  updated_at     INTEGER NOT NULL
+  updated_at     INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, jid)
 );
-CREATE INDEX IF NOT EXISTS idx_contacts_import_name ON contacts(import_name);
+CREATE INDEX IF NOT EXISTS idx_contacts_import_name ON contacts(owner_id, import_name);
 
 CREATE TABLE IF NOT EXISTS messages (
   id         TEXT PRIMARY KEY,
+  owner_id   TEXT NOT NULL DEFAULT 'demo',
   jid        TEXT NOT NULL,
   direction  TEXT NOT NULL,
   body       TEXT NOT NULL,
@@ -32,10 +35,11 @@ CREATE TABLE IF NOT EXISTS messages (
   status     TEXT,
   reason     TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_messages_jid_ts ON messages(jid, ts);
+CREATE INDEX IF NOT EXISTS idx_messages_jid_ts ON messages(owner_id, jid, ts);
 
 CREATE TABLE IF NOT EXISTS drafts (
   id            TEXT PRIMARY KEY,
+  owner_id      TEXT NOT NULL DEFAULT 'demo',
   jid           TEXT NOT NULL,
   incoming_id   TEXT,
   incoming_body TEXT NOT NULL,
@@ -46,16 +50,17 @@ CREATE TABLE IF NOT EXISTS drafts (
   created_at    INTEGER NOT NULL,
   sent_at       INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(owner_id, status, created_at);
 
 CREATE TABLE IF NOT EXISTS examples (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id  TEXT NOT NULL DEFAULT 'demo',
   jid       TEXT NOT NULL,
   their     TEXT NOT NULL,
   mine      TEXT NOT NULL,
   ts        INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_examples_jid ON examples(jid);
+CREATE INDEX IF NOT EXISTS idx_examples_jid ON examples(owner_id, jid);
 
 CREATE TABLE IF NOT EXISTS kv (
   key   TEXT PRIMARY KEY,
@@ -79,6 +84,7 @@ CREATE TABLE IF NOT EXISTS group_samples (
 -- Aktivitas terkini: dipakai AI untuk menjawab "lagi apa" + lampiran foto.
 CREATE TABLE IF NOT EXISTS activities (
   id         TEXT PRIMARY KEY,
+  owner_id   TEXT NOT NULL DEFAULT 'demo',
   text       TEXT NOT NULL,
   image_path TEXT,
   active     INTEGER NOT NULL DEFAULT 1,
@@ -89,6 +95,7 @@ CREATE TABLE IF NOT EXISTS activities (
 -- Status WhatsApp terjadwal.
 CREATE TABLE IF NOT EXISTS status_jobs (
   id           TEXT PRIMARY KEY,
+  owner_id     TEXT NOT NULL DEFAULT 'demo',
   image_path   TEXT,
   caption      TEXT,
   scheduled_at INTEGER NOT NULL,
@@ -105,9 +112,10 @@ CREATE INDEX IF NOT EXISTS idx_status_due ON status_jobs(status, scheduled_at);
 -- Log kirim status yang tidak ikut terhapus saat riwayat dashboard dibersihkan.
 CREATE TABLE IF NOT EXISTS status_send_log (
   job_id   TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL DEFAULT 'demo',
   sent_at  INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_status_send_log_at ON status_send_log(sent_at);
+CREATE INDEX IF NOT EXISTS idx_status_send_log_at ON status_send_log(owner_id, sent_at);
 
 -- Pemakaian token per panggilan AI.
 CREATE TABLE IF NOT EXISTS ai_usage (
@@ -249,6 +257,64 @@ export function openDb(dataDir) {
     db.exec('ALTER TABLE contacts ADD COLUMN memory TEXT');
   }
 
+  const legacyOwner = String(
+    db.prepare("SELECT value FROM kv WHERE key = 'wa_owner_id'").get()?.value || 'demo',
+  ).replace(/'/g, "''");
+
+  if (!cols.some((c) => c.name === 'owner_id')) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      ALTER TABLE contacts RENAME TO contacts_old;
+      CREATE TABLE contacts (
+        owner_id       TEXT NOT NULL DEFAULT 'demo',
+        jid            TEXT NOT NULL,
+        number         TEXT,
+        name           TEXT,
+        import_name    TEXT,
+        mode           TEXT NOT NULL DEFAULT 'auto',
+        style_profile  TEXT,
+        relationship   TEXT,
+        sample_count   INTEGER NOT NULL DEFAULT 0,
+        last_seen_at   INTEGER,
+        profiled_at    INTEGER,
+        created_at     INTEGER NOT NULL,
+        updated_at     INTEGER NOT NULL,
+        register       TEXT NOT NULL DEFAULT 'auto',
+        alias          TEXT,
+        language       TEXT NOT NULL DEFAULT 'auto',
+        burst          INTEGER NOT NULL DEFAULT 3,
+        memory         TEXT,
+        PRIMARY KEY (owner_id, jid)
+      );
+      INSERT INTO contacts
+        (owner_id, jid, number, name, import_name, mode, style_profile, relationship,
+         sample_count, last_seen_at, profiled_at, created_at, updated_at, register, alias,
+         language, burst, memory)
+      SELECT '${legacyOwner}', jid, number, name, import_name, mode, style_profile, relationship,
+         sample_count, last_seen_at, profiled_at, created_at, updated_at, register, alias,
+         language, burst, memory
+      FROM contacts_old;
+      DROP TABLE contacts_old;
+    `);
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_contacts_import_name ON contacts(owner_id, import_name)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_contacts_last_seen ON contacts(owner_id, last_seen_at)');
+
+  for (const table of ['messages', 'drafts', 'examples', 'activities', 'status_jobs', 'status_send_log']) {
+    const tableCols = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!tableCols.some((c) => c.name === 'owner_id')) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'demo'`);
+      if (legacyOwner !== 'demo') {
+        db.exec(`UPDATE ${table} SET owner_id = '${legacyOwner}'`);
+      }
+    }
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_messages_owner_jid_ts ON messages(owner_id, jid, ts)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_drafts_owner_status ON drafts(owner_id, status, created_at)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_examples_owner_jid ON examples(owner_id, jid)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_activities_owner ON activities(owner_id, active)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_status_owner_due ON status_jobs(owner_id, status, scheduled_at)');
+
   const knowledgeCols = db.prepare('PRAGMA table_info(knowledge)').all();
   if (!knowledgeCols.some((c) => c.name === 'owner_id')) {
     db.exec("ALTER TABLE knowledge ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'demo'");
@@ -323,9 +389,12 @@ export function getWaName(db, jid) {
 
 /* ------------------------------- contacts ------------------------------- */
 
-export function upsertContact(db, { jid, number, name, importName }) {
+export function upsertContact(db, { ownerId = 'demo', jid, number, name, importName }) {
   const ts = now();
-  const existing = db.prepare('SELECT * FROM contacts WHERE jid = ?').get(jid);
+  const owner = String(ownerId);
+  const existing = db
+    .prepare('SELECT * FROM contacts WHERE owner_id = ? AND jid = ?')
+    .get(owner, jid);
   if (existing) {
     db.prepare(
       `UPDATE contacts SET
@@ -333,37 +402,48 @@ export function upsertContact(db, { jid, number, name, importName }) {
          name = COALESCE(?, name),
          import_name = COALESCE(?, import_name),
          updated_at = ?
-       WHERE jid = ?`,
-    ).run(number ?? null, name ?? null, importName ?? null, ts, jid);
+       WHERE owner_id = ? AND jid = ?`,
+    ).run(number ?? null, name ?? null, importName ?? null, ts, owner, jid);
     if (isFamilyName(name ?? existing.name)) {
-      db.prepare("UPDATE contacts SET register = 'keluarga' WHERE jid = ? AND register IN ('auto','sopan')").run(jid);
+      db.prepare(
+        "UPDATE contacts SET register = 'keluarga' WHERE owner_id = ? AND jid = ? AND register IN ('auto','sopan')",
+      ).run(owner, jid);
     }
-    return getContact(db, jid);
+    return getContact(db, jid, owner);
   }
   db.prepare(
-    `INSERT INTO contacts (jid, number, name, import_name, mode, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'auto', ?, ?)`,
-  ).run(jid, number ?? null, name ?? null, importName ?? null, ts, ts);
+    `INSERT INTO contacts (owner_id, jid, number, name, import_name, mode, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'auto', ?, ?)`,
+  ).run(owner, jid, number ?? null, name ?? null, importName ?? null, ts, ts);
   if (isFamilyName(name)) {
-    db.prepare("UPDATE contacts SET register = 'keluarga' WHERE jid = ? AND register IN ('auto','sopan')").run(jid);
+    db.prepare(
+      "UPDATE contacts SET register = 'keluarga' WHERE owner_id = ? AND jid = ? AND register IN ('auto','sopan')",
+    ).run(owner, jid);
   }
-  return getContact(db, jid);
+  return getContact(db, jid, owner);
 }
 
-export function getContact(db, jid) {
-  return db.prepare('SELECT * FROM contacts WHERE jid = ?').get(jid) ?? null;
+export function getContact(db, jid, ownerId = 'demo') {
+  return (
+    db
+      .prepare('SELECT * FROM contacts WHERE owner_id = ? AND jid = ?')
+      .get(String(ownerId), jid) ?? null
+  );
 }
 
 const normName = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /** Cari kontak yang dulu di-import berdasarkan nama (belum ketemu JID-nya). */
-export function findContactByImportName(db, name) {
+export function findContactByImportName(db, name, ownerId = 'demo') {
   if (!name) return null;
+  const owner = String(ownerId);
 
   const exact =
     db
-      .prepare('SELECT * FROM contacts WHERE lower(import_name) = lower(?) OR lower(name) = lower(?) LIMIT 1')
-      .get(name, name) ?? null;
+      .prepare(
+        'SELECT * FROM contacts WHERE owner_id = ? AND (lower(import_name) = lower(?) OR lower(name) = lower(?)) LIMIT 1',
+      )
+      .get(owner, name, name) ?? null;
   if (exact) return exact;
 
   // Fallback: cocokkan nama yang sudah dinormalisasi, tapi jangan menebak
@@ -371,7 +451,9 @@ export function findContactByImportName(db, name) {
   const target = normName(name);
   if (target.length < 4) return null;
 
-  const placeholders = db.prepare("SELECT * FROM contacts WHERE jid LIKE 'name:%'").all();
+  const placeholders = db
+    .prepare("SELECT * FROM contacts WHERE owner_id = ? AND jid LIKE 'name:%'")
+    .all(owner);
   return (
     placeholders.find((row) => {
       const n = normName(row.import_name || row.name);
@@ -380,20 +462,30 @@ export function findContactByImportName(db, name) {
   );
 }
 
-export function linkContactJid(db, oldJid, newJid, number) {
+export function linkContactJid(db, oldJid, newJid, number, ownerId = 'demo') {
   if (oldJid === newJid) return;
+  const owner = String(ownerId);
   const ts = now();
   db.exec('BEGIN');
   try {
-    db.prepare('UPDATE contacts SET jid = ?, number = ?, updated_at = ? WHERE jid = ?').run(
+    db.prepare(
+      'UPDATE contacts SET jid = ?, number = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+    ).run(newJid, number ?? null, ts, owner, oldJid);
+    db.prepare('UPDATE messages SET jid = ? WHERE owner_id = ? AND jid = ?').run(
       newJid,
-      number ?? null,
-      ts,
+      owner,
       oldJid,
     );
-    db.prepare('UPDATE messages SET jid = ? WHERE jid = ?').run(newJid, oldJid);
-    db.prepare('UPDATE drafts SET jid = ? WHERE jid = ?').run(newJid, oldJid);
-    db.prepare('UPDATE examples SET jid = ? WHERE jid = ?').run(newJid, oldJid);
+    db.prepare('UPDATE drafts SET jid = ? WHERE owner_id = ? AND jid = ?').run(
+      newJid,
+      owner,
+      oldJid,
+    );
+    db.prepare('UPDATE examples SET jid = ? WHERE owner_id = ? AND jid = ?').run(
+      newJid,
+      owner,
+      oldJid,
+    );
     db.exec('COMMIT');
   } catch (err) {
     db.exec('ROLLBACK');
@@ -401,57 +493,59 @@ export function linkContactJid(db, oldJid, newJid, number) {
   }
 }
 
-export function listContacts(db, q = '') {
+export function listContacts(db, q = '', ownerId = 'demo') {
   const like = `%${q}%`;
   return db
     .prepare(
       `SELECT * FROM contacts
-       WHERE (? = '' OR name LIKE ? OR import_name LIKE ? OR number LIKE ?)
+       WHERE owner_id = ? AND (? = '' OR name LIKE ? OR import_name LIKE ? OR number LIKE ?)
        ORDER BY last_seen_at DESC NULLS LAST, updated_at DESC
        LIMIT 500`,
     )
-    .all(q, like, like, like);
+    .all(String(ownerId), q, like, like, like);
 }
 
-export function setContactMode(db, jid, mode) {
+export function setContactMode(db, jid, mode, ownerId = 'demo') {
   if (!['auto', 'draft', 'ignore'].includes(mode)) throw new Error('mode tidak valid');
-  db.prepare('UPDATE contacts SET mode = ?, updated_at = ? WHERE jid = ?').run(mode, now(), jid);
-  return getContact(db, jid);
+  db.prepare(
+    'UPDATE contacts SET mode = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(mode, now(), String(ownerId), jid);
+  return getContact(db, jid, ownerId);
 }
 
-export function setContactRegister(db, jid, register) {
+export function setContactRegister(db, jid, register, ownerId = 'demo') {
   const allowed = ['auto', 'wajib_sopan', 'keluarga', 'temen', 'temen_dekat', 'temen_poll'];
   if (!allowed.includes(register)) throw new Error('register tidak valid');
-  db.prepare('UPDATE contacts SET register = ?, updated_at = ? WHERE jid = ?').run(register, now(), jid);
-  return getContact(db, jid);
+  db.prepare(
+    'UPDATE contacts SET register = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(register, now(), String(ownerId), jid);
+  return getContact(db, jid, ownerId);
 }
 
-export function setContactAlias(db, jid, alias) {
-  db.prepare('UPDATE contacts SET alias = ?, updated_at = ? WHERE jid = ?').run(
-    alias || null,
-    now(),
-    jid,
-  );
-  return getContact(db, jid);
+export function setContactAlias(db, jid, alias, ownerId = 'demo') {
+  db.prepare(
+    'UPDATE contacts SET alias = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(alias || null, now(), String(ownerId), jid);
+  return getContact(db, jid, ownerId);
 }
 
-export function setContactLanguage(db, jid, language) {
+export function setContactLanguage(db, jid, language, ownerId = 'demo') {
   if (!['auto', 'id', 'jv'].includes(language)) throw new Error('language tidak valid');
-  db.prepare('UPDATE contacts SET language = ?, updated_at = ? WHERE jid = ?').run(
-    language,
-    now(),
-    jid,
-  );
-  return getContact(db, jid);
+  db.prepare(
+    'UPDATE contacts SET language = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(language, now(), String(ownerId), jid);
+  return getContact(db, jid, ownerId);
 }
 
-export function setContactBurst(db, jid, burst) {
+export function setContactBurst(db, jid, burst, ownerId = 'demo') {
   const n = Math.max(1, Math.min(8, Number(burst) || 3));
-  db.prepare('UPDATE contacts SET burst = ?, updated_at = ? WHERE jid = ?').run(n, now(), jid);
-  return getContact(db, jid);
+  db.prepare(
+    'UPDATE contacts SET burst = ?, updated_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(n, now(), String(ownerId), jid);
+  return getContact(db, jid, ownerId);
 }
 
-export function saveProfile(db, jid, { styleProfile, relationship, sampleCount }) {
+export function saveProfile(db, jid, { styleProfile, relationship, sampleCount }, ownerId = 'demo') {
   const ts = now();
   db.prepare(
     `UPDATE contacts SET
@@ -460,61 +554,82 @@ export function saveProfile(db, jid, { styleProfile, relationship, sampleCount }
        sample_count  = COALESCE(?, sample_count),
        profiled_at   = ?,
        updated_at    = ?
-     WHERE jid = ?`,
+     WHERE owner_id = ? AND jid = ?`,
   ).run(
     styleProfile ? JSON.stringify(styleProfile) : null,
     relationship ?? null,
     sampleCount ?? null,
     ts,
     ts,
+    String(ownerId),
     jid,
   );
 }
 
 /* -------------------------------- messages ------------------------------- */
 
-export function insertMessage(db, { id, jid, direction, body, ts, waId, status, reason }) {
+export function insertMessage(db, { ownerId = 'demo', id, jid, direction, body, ts, waId, status, reason }) {
   db.prepare(
-    `INSERT OR REPLACE INTO messages (id, jid, direction, body, ts, wa_id, status, reason)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, jid, direction, body, ts ?? now(), waId ?? null, status ?? null, reason ?? null);
+    `INSERT OR REPLACE INTO messages (id, owner_id, jid, direction, body, ts, wa_id, status, reason)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    String(ownerId),
+    jid,
+    direction,
+    body,
+    ts ?? now(),
+    waId ?? null,
+    status ?? null,
+    reason ?? null,
+  );
 }
 
-export function updateMessageStatus(db, id, status, reason = null) {
-  db.prepare('UPDATE messages SET status = ?, reason = ? WHERE id = ?').run(status, reason, id);
+export function updateMessageStatus(db, id, status, reason = null, ownerId = 'demo') {
+  db.prepare(
+    'UPDATE messages SET status = ?, reason = ? WHERE id = ? AND owner_id = ?',
+  ).run(status, reason, id, String(ownerId));
 }
 
-export function touchContact(db, jid) {
-  db.prepare('UPDATE contacts SET last_seen_at = ? WHERE jid = ?').run(now(), jid);
+export function touchContact(db, jid, ownerId = 'demo') {
+  db.prepare(
+    'UPDATE contacts SET last_seen_at = ? WHERE owner_id = ? AND jid = ?',
+  ).run(now(), String(ownerId), jid);
 }
 
-export function recentMessages(db, jid, limit = 20) {
+export function recentMessages(db, jid, limit = 20, ownerId = 'demo') {
   return db
-    .prepare('SELECT * FROM messages WHERE jid = ? AND ts <= ? ORDER BY ts DESC LIMIT ?')
-    .all(jid, now(), limit)
+    .prepare(
+      'SELECT * FROM messages WHERE owner_id = ? AND jid = ? AND ts <= ? ORDER BY ts DESC LIMIT ?',
+    )
+    .all(String(ownerId), jid, now(), limit)
     .reverse();
 }
 
-export function countOutSince(db, sinceTs, jid = null) {  if (jid) {
+export function countOutSince(db, sinceTs, jid = null, ownerId = 'demo') {
+  const owner = String(ownerId);
+  if (jid) {
     return db
       .prepare(
         `SELECT COUNT(*) AS n FROM messages
-         WHERE direction = 'out' AND ts >= ? AND jid = ? AND status IN ('auto_sent','sent')`,
+         WHERE owner_id = ? AND direction = 'out' AND ts >= ? AND jid = ? AND status IN ('auto_sent','sent')`,
       )
-      .get(sinceTs, jid).n;
+      .get(owner, sinceTs, jid).n;
   }
   return db
     .prepare(
       `SELECT COUNT(*) AS n FROM messages
-       WHERE direction = 'out' AND ts >= ? AND status IN ('auto_sent','sent')`,
+       WHERE owner_id = ? AND direction = 'out' AND ts >= ? AND status IN ('auto_sent','sent')`,
     )
-    .get(sinceTs).n;
+    .get(owner, sinceTs).n;
 }
 
-export function countOutMessages(db, jid) {
+export function countOutMessages(db, jid, ownerId = 'demo') {
   return db
-    .prepare("SELECT COUNT(*) AS n FROM messages WHERE jid = ? AND direction = 'out'")
-    .get(jid).n;
+    .prepare(
+      "SELECT COUNT(*) AS n FROM messages WHERE owner_id = ? AND jid = ? AND direction = 'out'",
+    )
+    .get(String(ownerId), jid).n;
 }
 
 /* --------------------------------- drafts -------------------------------- */
@@ -522,33 +637,52 @@ export function countOutMessages(db, jid) {
 export function createDraft(db, d) {
   const id = d.id ?? `dr_${now()}_${Math.random().toString(36).slice(2, 8)}`;
   db.prepare(
-    `INSERT INTO drafts (id, jid, incoming_id, incoming_body, reply, confidence, reason, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, d.jid, d.incomingId ?? null, d.incomingBody, d.reply ?? null, d.confidence ?? null, d.reason ?? null, d.status ?? 'pending', d.createdAt ?? now());
-  return getDraft(db, id);
+    `INSERT INTO drafts (id, owner_id, jid, incoming_id, incoming_body, reply, confidence, reason, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    String(d.ownerId || 'demo'),
+    d.jid,
+    d.incomingId ?? null,
+    d.incomingBody,
+    d.reply ?? null,
+    d.confidence ?? null,
+    d.reason ?? null,
+    d.status ?? 'pending',
+    d.createdAt ?? now(),
+  );
+  return getDraft(db, id, d.ownerId || 'demo');
 }
 
-export function getDraft(db, id) {
-  return db.prepare('SELECT * FROM drafts WHERE id = ?').get(id) ?? null;
+export function getDraft(db, id, ownerId = 'demo') {
+  return (
+    db
+      .prepare('SELECT * FROM drafts WHERE id = ? AND owner_id = ?')
+      .get(id, String(ownerId)) ?? null
+  );
 }
 
-export function listDrafts(db, status = 'pending') {
+export function listDrafts(db, status = 'pending', ownerId = 'demo') {
+  const owner = String(ownerId);
   return db
     .prepare(
       `SELECT d.*, c.name AS contact_name, c.number AS contact_number, c.mode AS contact_mode
-       FROM drafts d LEFT JOIN contacts c ON c.jid = d.jid
-       WHERE d.status = ? ORDER BY d.created_at DESC LIMIT 100`,
+       FROM drafts d
+       LEFT JOIN contacts c ON c.owner_id = d.owner_id AND c.jid = d.jid
+       WHERE d.owner_id = ? AND d.status = ? ORDER BY d.created_at DESC LIMIT 100`,
     )
-    .all(status);
+    .all(owner, status);
 }
 
 /** Klaim draft sebelum dikirim. Hanya satu request yang boleh menang. */
-export function claimDraft(db, id, from = 'pending', to = 'sending') {
-  const result = db.prepare('UPDATE drafts SET status = ? WHERE id = ? AND status = ?').run(to, id, from);
+export function claimDraft(db, id, from = 'pending', to = 'sending', ownerId = 'demo') {
+  const result = db
+    .prepare('UPDATE drafts SET status = ? WHERE id = ? AND owner_id = ? AND status = ?')
+    .run(to, id, String(ownerId), from);
   return Number(result.changes) === 1;
 }
 
-export function updateDraft(db, id, patch) {
+export function updateDraft(db, id, patch, ownerId = 'demo') {
   const fields = [];
   const values = [];
   for (const key of ['reply', 'status', 'confidence', 'reason', 'sent_at']) {
@@ -557,32 +691,33 @@ export function updateDraft(db, id, patch) {
       values.push(patch[key]);
     }
   }
-  if (!fields.length) return getDraft(db, id);
-  values.push(id);
-  db.prepare(`UPDATE drafts SET ${fields.join(', ')} WHERE id = ?`).run(...values);
-  return getDraft(db, id);
+  if (!fields.length) return getDraft(db, id, ownerId);
+  values.push(id, String(ownerId));
+  db.prepare(`UPDATE drafts SET ${fields.join(', ')} WHERE id = ? AND owner_id = ?`).run(...values);
+  return getDraft(db, id, ownerId);
 }
 
-export function clearDrafts(db, status = 'pending') {
-  const result = db.prepare('DELETE FROM drafts WHERE status = ?').run(status);
+export function clearDrafts(db, status = 'pending', ownerId = 'demo') {
+  const result = db
+    .prepare('DELETE FROM drafts WHERE owner_id = ? AND status = ?')
+    .run(String(ownerId), status);
   return Number(result.changes) || 0;
 }
 
 /* -------------------------------- examples ------------------------------- */
 
-export function addExample(db, { jid, their, mine, ts }) {
-  db.prepare('INSERT INTO examples (jid, their, mine, ts) VALUES (?, ?, ?, ?)').run(
-    jid,
-    their,
-    mine,
-    ts ?? now(),
-  );
+export function addExample(db, { ownerId = 'demo', jid, their, mine, ts }) {
+  db.prepare(
+    'INSERT INTO examples (owner_id, jid, their, mine, ts) VALUES (?, ?, ?, ?, ?)',
+  ).run(String(ownerId), jid, their, mine, ts ?? now());
 }
 
-export function listExamples(db, jid, limit = 12) {
+export function listExamples(db, jid, limit = 12, ownerId = 'demo') {
   const rows = db
-    .prepare('SELECT their, mine FROM examples WHERE jid = ? ORDER BY ts DESC LIMIT 300')
-    .all(jid);
+    .prepare(
+      'SELECT their, mine FROM examples WHERE owner_id = ? AND jid = ? ORDER BY ts DESC LIMIT 300',
+    )
+    .all(String(ownerId), jid);
 
   // Utamakan contoh pendek: gaya aslinya 2-8 kata, bukan paragraf.
   const short = rows.filter((r) => r.mine.length <= 60);
@@ -595,87 +730,111 @@ export function listExamples(db, jid, limit = 12) {
   return pool.slice(0, limit);
 }
 
-export function countExamples(db, jid) {
-  return db.prepare('SELECT COUNT(*) AS n FROM examples WHERE jid = ?').get(jid).n;
+export function countExamples(db, jid, ownerId = 'demo') {
+  return db
+    .prepare('SELECT COUNT(*) AS n FROM examples WHERE owner_id = ? AND jid = ?')
+    .get(String(ownerId), jid).n;
 }
 
 /* ------------------------------- aktivitas ------------------------------- */
 
-export function createActivity(db, { id, text, imagePath, expiresAt }) {
-  deactivateAllActivities(db);
+export function createActivity(db, { ownerId = 'demo', id, text, imagePath, expiresAt }) {
+  deactivateAllActivities(db, ownerId);
   db.prepare(
-    'INSERT INTO activities (id, text, image_path, active, expires_at, created_at) VALUES (?, ?, ?, 1, ?, ?)',
-  ).run(id, text, imagePath ?? null, expiresAt ?? null, now());
-  return getActivity(db, id);
+    'INSERT INTO activities (id, owner_id, text, image_path, active, expires_at, created_at) VALUES (?, ?, ?, ?, 1, ?, ?)',
+  ).run(id, String(ownerId), text, imagePath ?? null, expiresAt ?? null, now());
+  return getActivity(db, id, ownerId);
 }
 
-export function getActivity(db, id) {
-  return db.prepare('SELECT * FROM activities WHERE id = ?').get(id) ?? null;
-}
-
-export function getActiveActivity(db) {
+export function getActivity(db, id, ownerId = 'demo') {
   return (
     db
-      .prepare(
-        'SELECT * FROM activities WHERE active = 1 AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC LIMIT 1',
-      )
-      .get(now()) ?? null
+      .prepare('SELECT * FROM activities WHERE id = ? AND owner_id = ?')
+      .get(id, String(ownerId)) ?? null
   );
 }
 
-export function listActivities(db, limit = 20) {
-  return db.prepare('SELECT * FROM activities ORDER BY created_at DESC LIMIT ?').all(limit);
+export function getActiveActivity(db, ownerId = 'demo') {
+  return (
+    db
+      .prepare(
+        'SELECT * FROM activities WHERE owner_id = ? AND active = 1 AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC LIMIT 1',
+      )
+      .get(String(ownerId), now()) ?? null
+  );
 }
 
-export function setActivityActive(db, id, active) {
-  db.prepare('UPDATE activities SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
-  return getActivity(db, id);
+export function listActivities(db, limit = 20, ownerId = 'demo') {
+  return db
+    .prepare('SELECT * FROM activities WHERE owner_id = ? ORDER BY created_at DESC LIMIT ?')
+    .all(String(ownerId), limit);
 }
 
-export function deactivateAllActivities(db) {
-  db.prepare('UPDATE activities SET active = 0 WHERE active = 1').run();
+export function setActivityActive(db, id, active, ownerId = 'demo') {
+  db.prepare(
+    'UPDATE activities SET active = ? WHERE id = ? AND owner_id = ?',
+  ).run(active ? 1 : 0, id, String(ownerId));
+  return getActivity(db, id, ownerId);
 }
 
-export function deleteActivity(db, id) {
-  db.prepare('DELETE FROM activities WHERE id = ?').run(id);
+export function deactivateAllActivities(db, ownerId = 'demo') {
+  db.prepare('UPDATE activities SET active = 0 WHERE owner_id = ? AND active = 1').run(
+    String(ownerId),
+  );
+}
+
+export function deleteActivity(db, id, ownerId = 'demo') {
+  db.prepare('DELETE FROM activities WHERE id = ? AND owner_id = ?').run(id, String(ownerId));
 }
 
 /* ------------------------------ status jobs ------------------------------ */
 
-export function createStatusJob(db, { id, imagePath, caption, scheduledAt }) {
+export function createStatusJob(db, { ownerId = 'demo', id, imagePath, caption, scheduledAt }) {
   db.prepare(
-    'INSERT INTO status_jobs (id, image_path, caption, scheduled_at, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-  ).run(id, imagePath ?? null, caption ?? null, scheduledAt, 'pending', now());
-  return getStatusJob(db, id);
+    'INSERT INTO status_jobs (id, owner_id, image_path, caption, scheduled_at, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  ).run(id, String(ownerId), imagePath ?? null, caption ?? null, scheduledAt, 'pending', now());
+  return getStatusJob(db, id, ownerId);
 }
 
-export function getStatusJob(db, id) {
-  return db.prepare('SELECT * FROM status_jobs WHERE id = ?').get(id) ?? null;
+export function getStatusJob(db, id, ownerId = 'demo') {
+  return (
+    db
+      .prepare('SELECT * FROM status_jobs WHERE id = ? AND owner_id = ?')
+      .get(id, String(ownerId)) ?? null
+  );
 }
 
-export function listStatusJobs(db, limit = 60) {
-  return db.prepare('SELECT * FROM status_jobs ORDER BY scheduled_at DESC LIMIT ?').all(limit);
-}
-
-export function dueStatusJobs(db, at = now()) {
+export function listStatusJobs(db, limit = 60, ownerId = 'demo') {
   return db
-    .prepare("SELECT * FROM status_jobs WHERE status = 'pending' AND scheduled_at <= ? ORDER BY scheduled_at ASC")
-    .all(at);
+    .prepare('SELECT * FROM status_jobs WHERE owner_id = ? ORDER BY scheduled_at DESC LIMIT ?')
+    .all(String(ownerId), limit);
+}
+
+export function dueStatusJobs(db, at = now(), ownerId = 'demo') {
+  return db
+    .prepare(
+      "SELECT * FROM status_jobs WHERE owner_id = ? AND status = 'pending' AND scheduled_at <= ? ORDER BY scheduled_at ASC",
+    )
+    .all(String(ownerId), at);
 }
 
 /** Klaim job sebelum upload. Hanya satu pemanggil yang boleh menang. */
-export function claimStatusJob(db, id, from = ['pending']) {
+export function claimStatusJob(db, id, from = ['pending'], ownerId = 'demo') {
   const statuses = from.filter(Boolean);
   if (!statuses.length) return false;
   const placeholders = statuses.map(() => '?').join(', ');
   const result = db
-    .prepare(`UPDATE status_jobs SET status = 'sending' WHERE id = ? AND status IN (${placeholders})`)
-    .run(id, ...statuses);
+    .prepare(
+      `UPDATE status_jobs SET status = 'sending' WHERE id = ? AND owner_id = ? AND status IN (${placeholders})`,
+    )
+    .run(id, String(ownerId), ...statuses);
   return Number(result.changes) === 1;
 }
 
-export function logStatusSend(db, jobId, sentAt = now()) {
-  db.prepare('INSERT OR IGNORE INTO status_send_log (job_id, sent_at) VALUES (?, ?)').run(jobId, sentAt);
+export function logStatusSend(db, jobId, sentAt = now(), ownerId = 'demo') {
+  db.prepare(
+    'INSERT OR IGNORE INTO status_send_log (job_id, owner_id, sent_at) VALUES (?, ?, ?)',
+  ).run(jobId, String(ownerId), sentAt);
 }
 
 /** Saat proses restart, job yang tertahan di 'sending' dikembalikan ke pending. */
@@ -686,11 +845,11 @@ export function resetSendingStatusJobs(db) {
 /** Isi log lama dari baris sent supaya kuota hari ini tidak ter-reset setelah upgrade. */
 export function backfillStatusSendLog(db) {
   db.prepare(
-    "INSERT OR IGNORE INTO status_send_log (job_id, sent_at) SELECT id, sent_at FROM status_jobs WHERE sent_at IS NOT NULL",
+    "INSERT OR IGNORE INTO status_send_log (job_id, owner_id, sent_at) SELECT id, owner_id, sent_at FROM status_jobs WHERE sent_at IS NOT NULL",
   ).run();
 }
 
-export function updateStatusJob(db, id, patch) {
+export function updateStatusJob(db, id, patch, ownerId = 'demo') {
   const fields = [];
   const values = [];
   for (const key of ['status', 'attempts', 'last_error', 'sent_at', 'wa_message_id', 'wa_status_jids']) {
@@ -699,18 +858,22 @@ export function updateStatusJob(db, id, patch) {
       values.push(patch[key]);
     }
   }
-  if (!fields.length) return getStatusJob(db, id);
-  values.push(id);
-  db.prepare(`UPDATE status_jobs SET ${fields.join(', ')} WHERE id = ?`).run(...values);
-  return getStatusJob(db, id);
+  if (!fields.length) return getStatusJob(db, id, ownerId);
+  values.push(id, String(ownerId));
+  db.prepare(
+    `UPDATE status_jobs SET ${fields.join(', ')} WHERE id = ? AND owner_id = ?`,
+  ).run(...values);
+  return getStatusJob(db, id, ownerId);
 }
 
-export function countStatusSentToday(db) {
+export function countStatusSentToday(db, ownerId = 'demo') {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   return db
-    .prepare('SELECT COUNT(*) AS n FROM status_send_log WHERE sent_at >= ?')
-    .get(start.getTime()).n;
+    .prepare(
+      'SELECT COUNT(*) AS n FROM status_send_log WHERE owner_id = ? AND sent_at >= ?',
+    )
+    .get(String(ownerId), start.getTime()).n;
 }
 
 /* ----------------------------------- kv ---------------------------------- */
