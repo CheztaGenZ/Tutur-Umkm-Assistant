@@ -212,6 +212,7 @@ proposal/       Bali DigiFest submission documents
 ## Known limitations
 
 - WhatsApp transport is disabled during judging to avoid account risk. Coba Chat exercises the same AI and policy code.
+- One WhatsApp number belongs to one account per deployment. The first account that claims the connected number owns its chats, drafts, and replies. Other accounts keep their own business profile, catalog, knowledge, and orders, but cannot see or control that WhatsApp session.
 - Chat history and style training still share one workspace. Business profiles, catalogs, knowledge, and orders are isolated per account.
 - Retrieval is keyword based. A larger catalog will need embeddings or a search index.
 - SQLite fits a single-tenant deployment. Multi-tenant SaaS would need Postgres.

@@ -534,6 +534,16 @@ export function createServer({ db, wa, bus }) {
   /* -------------------------------- katalog -------------------------------- */
 
   const ownerId = (req) => req.user?.id || 'demo';
+  const waOwnerId = () => store.kvGet(db, 'wa_owner_id') || null;
+  const ownsWhatsApp = (req) => {
+    if (!req.user) return true;
+    const owner = waOwnerId();
+    return Boolean(owner) && owner === req.user.id;
+  };
+  const canReadChat = (req) => {
+    if (!req.user) return true;
+    return ownsWhatsApp(req);
+  };
 
   app.get('/api/products', (req, res) => {
     if (!dashboardAllowed(req)) return res.status(403).json({ error: 'Silakan masuk terlebih dahulu.' });
@@ -691,7 +701,15 @@ export function createServer({ db, wa, bus }) {
 
   app.get('/api/status', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    const snapshot = wa.snapshot();
+    const owner = waOwnerId();
+    const claimed = Boolean(owner);
+    const ownedByMe = !owner ? true : !req.user || owner === req.user.id;
+    let snapshot = wa.snapshot();
+    if (req.user && owner && owner !== req.user.id) {
+      snapshot = { status: 'idle', qr: null, me: null, lastError: null, since: null };
+    }
+    snapshot.claimed = claimed;
+    snapshot.ownedByMe = ownedByMe;
     if (!isLocalRequest(req)) {
       snapshot.qr = null;
       snapshot.me = null;
@@ -701,7 +719,7 @@ export function createServer({ db, wa, bus }) {
     res.json({
       wa: snapshot,
       paused: store.kvGet(db, 'paused') === '1',
-      sentToday: store.countOutSince(db, day.getTime()),
+      sentToday: ownedByMe ? store.countOutSince(db, day.getTime()) : 0,
       aiReady: Boolean(config.ai.apiKey),
       canWrite: isLocalRequest(req),
       config: {
@@ -788,8 +806,27 @@ export function createServer({ db, wa, bus }) {
     res.json({ paused: store.kvGet(db, 'paused') === '1' });
   });
 
+  // Klaim nomor WhatsApp yang sudah terhubung untuk akun yang sedang login.
+  app.post('/api/wa/claim', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Silakan masuk dulu.' });
+    const owner = waOwnerId();
+    if (owner && owner !== req.user.id) {
+      return res.status(409).json({ error: 'Nomor ini sudah dipakai akun lain.' });
+    }
+    if (wa.snapshot().status !== 'open') {
+      return res.status(400).json({ error: 'WhatsApp belum terhubung.' });
+    }
+    store.kvSet(db, 'wa_owner_id', req.user.id);
+    res.json({ ok: true, ownerId: req.user.id });
+  });
+
   // Putuskan sesi WhatsApp lalu mulai bersih (QR baru).
   app.post('/api/wa/connect', async (req, res) => {
+    const owner = waOwnerId();
+    if (owner && req.user && owner !== req.user.id) {
+      return res.status(409).json({ error: 'WhatsApp sudah terhubung ke akun lain.' });
+    }
+    if (req.user && !owner) store.kvSet(db, 'wa_owner_id', req.user.id);
     try {
       await wa.start();
       res.json({ ok: true, wa: wa.snapshot() });
@@ -799,7 +836,12 @@ export function createServer({ db, wa, bus }) {
   });
 
   app.post('/api/wa/logout', async (req, res) => {
+    const owner = waOwnerId();
+    if (owner && req.user && owner !== req.user.id) {
+      return res.status(403).json({ error: 'Hanya akun pemilik nomor yang bisa memutus WhatsApp.' });
+    }
     try {
+      if (req.user) store.kvSet(db, 'wa_owner_id', '');
       await wa.restartFresh();
       bus.emit('event', { type: 'log', message: 'Sesi WhatsApp diputus. Scan QR baru.' });
       res.json({ ok: true });
@@ -859,6 +901,7 @@ export function createServer({ db, wa, bus }) {
   /* -------------------------------- contacts ------------------------------- */
 
   app.get('/api/contacts', (req, res) => {
+    if (!canReadChat(req)) return res.json([]);
     const rows = store.listContacts(db, String(req.query.q || ''));
     res.json(
       rows.map((c) => ({
@@ -898,6 +941,7 @@ export function createServer({ db, wa, bus }) {
   /* --------------------------------- drafts -------------------------------- */
 
   app.get('/api/drafts', (req, res) => {
+    if (!canReadChat(req)) return res.json([]);
     const status = String(req.query.status || 'pending');
     if (!isLocalRequest(req) && status !== 'pending') {
       return res.status(403).json({ error: 'Riwayat draft hanya bisa dibaca dari PC.' });
@@ -1007,6 +1051,7 @@ export function createServer({ db, wa, bus }) {
 
   // ------------------------------- aktivitas -------------------------------
   app.get('/api/activities', (req, res) => {
+    if (!canReadChat(req)) return res.json({ active: null, list: [] });
     const active = store.getActiveActivity(db);
     res.json({
       active: publicActivity(active),

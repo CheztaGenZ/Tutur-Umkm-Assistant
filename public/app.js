@@ -216,7 +216,20 @@ async function refreshStatus() {
     if (waTitle) {
       const sub = $('#waPanelSub');
       const btn = $('#waConnectBtn');
-      if (wa.status === 'open') {
+      if (wa.status === 'open' && wa.claimed === false) {
+        waTitle.textContent = 'Nomor WhatsApp terdeteksi';
+        sub.textContent = wa.me?.number
+          ? `Nomor ${wa.me.number} belum terikat ke akun. Klik tombol untuk memakai nomor ini di akun ini.`
+          : 'Ada nomor WhatsApp yang terhubung. Klik tombol untuk memakai nomor ini di akun ini.';
+        btn.textContent = 'Pakai nomor ini';
+        btn.disabled = false;
+      } else if (wa.status === 'open' && wa.ownedByMe === false) {
+        waTitle.textContent = 'WhatsApp dipakai akun lain';
+        sub.textContent =
+          'Akun ini tidak menerima chat WhatsApp. Data chat hanya terlihat di akun pemilik nomor.';
+        btn.textContent = 'Tidak tersedia';
+        btn.disabled = true;
+      } else if (wa.status === 'open') {
         waTitle.textContent = 'WhatsApp tersambung';
         sub.textContent = wa.me?.number
           ? `Nomor ${wa.me.number}. Chat masuk akan muncul di antrean bawah.`
@@ -228,6 +241,12 @@ async function refreshStatus() {
         sub.textContent = 'Buka WhatsApp di HP, pilih Perangkat tertaut, lalu scan.';
         btn.textContent = 'Tampilkan QR';
         btn.disabled = false;
+      } else if (wa.claimed && wa.ownedByMe === false) {
+        waTitle.textContent = 'WhatsApp terhubung ke akun lain';
+        sub.textContent =
+          'Nomor WhatsApp deployment ini dipakai akun lain. Akun ini tetap bisa memakai Coba Chat, katalog, dan profil usaha.';
+        btn.textContent = 'Tidak tersedia';
+        btn.disabled = true;
       } else {
         waTitle.textContent = 'WhatsApp belum tersambung';
         sub.textContent = 'Hubungkan nomor usaha untuk menerima chat dan membuat draft di sini.';
@@ -1775,6 +1794,22 @@ $('#waConnectBtn')?.addEventListener('click', async () => {
     return;
   }
   const btn = $('#waConnectBtn');
+  if (wa?.status === 'open' && wa.claimed === false) {
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+    try {
+      await api('/api/wa/claim', { method: 'POST' });
+      toast('Nomor WhatsApp sekarang terhubung ke akun ini.');
+      await refreshStatus();
+      await refreshDrafts();
+      await refreshContacts();
+    } catch (err) {
+      toast(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Pakai nomor ini';
+    }
+    return;
+  }
   btn.disabled = true;
   btn.textContent = 'Menghubungkan...';
   try {

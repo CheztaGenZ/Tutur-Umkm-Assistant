@@ -188,6 +188,11 @@ export function createHistoryIngest({ db, wa, bus }) {
 export function createMessageHandler({ db, wa, bus }) {
   const emit = (event) => bus.emit('event', event);
 
+  // Satu nomor WhatsApp per deployment. Akun yang mengklaim nomor ini
+  // menjadi pemilik data chat, knowledge, dan pesanan untuk balasan WA.
+  const waOwner = () => store.kvGet(db, 'wa_owner_id') || config.ownerId;
+  const waOwnerName = () => store.getBusinessProfile(db, waOwner())?.name || config.me;
+
   async function withLock(jid, fn) {
     const prev = lockChains.get(jid) || Promise.resolve();
     let release;
@@ -419,7 +424,7 @@ export function createMessageHandler({ db, wa, bus }) {
           messages: context.messages || [],
           reply: context.reply || '',
           contactName: contact.name || 'dia',
-          meName: config.me,
+          meName: waOwnerName(),
         });
         chosen = picked?.file || null;
       } catch {
@@ -542,7 +547,7 @@ export function createMessageHandler({ db, wa, bus }) {
         : [];
 
       const knowledge = searchKnowledge(
-        store.listKnowledge(db, { activeOnly: true, ownerId: config.ownerId }),
+        store.listKnowledge(db, { activeOnly: true, ownerId: waOwner() }),
         incomingBody,
         3,
       );
@@ -557,7 +562,7 @@ export function createMessageHandler({ db, wa, bus }) {
           throw err;
         }
         return generateReply({
-          meName: config.me,
+          meName: waOwnerName(),
           contactName: contact.name || number,
           style,
           relationship,
@@ -880,7 +885,7 @@ export function createMessageHandler({ db, wa, bus }) {
       // mengonfirmasi, tapi daftar pesanan tidak boleh kosong.
       if (result.order) {
         const order = store.createOrder(db, {
-          ownerId: config.ownerId,
+          ownerId: waOwner(),
           customerName: result.order.customerName,
           items: result.order.items,
           total: result.order.total,
@@ -963,7 +968,7 @@ export function createMessageHandler({ db, wa, bus }) {
           }
 
           if (result.attachPayment === 'qris') {
-            const profile = store.getBusinessProfile(db, config.ownerId);
+            const profile = store.getBusinessProfile(db, waOwner());
             const rel = String(profile?.qris_image_path || '').replace(/^\/uploads\//, '');
             const file = path.join(path.resolve(config.dataDir), 'uploads', rel);
             if (rel && fs.existsSync(file)) {
@@ -1016,7 +1021,7 @@ export function createMessageHandler({ db, wa, bus }) {
     if (contact.relationship || examples.length < 8) return contact.relationship;
     try {
       const text = await generateRelationship({
-        meName: config.me,
+        meName: waOwnerName(),
         contactName: contact.name || 'dia',
         pairs: examples,
       });

@@ -28,6 +28,8 @@ Tutur, the Bali DigiFest 2026 submission.
 - Coba Chat showing the demo business name after an owner signed in.
 - Orders from WhatsApp drafts not being recorded.
 - Dashboard showing the demo persona name instead of the signed-in owner.
+- WhatsApp number and chat data visible to every account, and WhatsApp replies using the demo business instead of the account that connected the number.
+- Accounts can now claim the connected WhatsApp number. Other accounts see an idle connection and cannot read its chats or take it over.
 
 ### Security
 
