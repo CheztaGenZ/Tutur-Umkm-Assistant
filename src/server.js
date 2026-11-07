@@ -16,6 +16,8 @@ import { expandSlang } from './ai/slangExtra.js';
 import { sendStatusJob } from './wa/statusWorker.js';
 import { splitBubbles } from './wa/bubbles.js';
 import { decide, dayStart, hourStart } from './policy.js';
+import { createPlayground } from './playground.js';
+import { DEMO_BUSINESS, DEMO_PERSONAS, DEMO_SCENARIOS } from './demo/personas.js';
 import { getSettings, saveSettings, testSettings, isLocalRequest, isPrivateRemote, publicBaseUrl } from './settings.js';
 import AdmZip from 'adm-zip';
 
@@ -128,7 +130,84 @@ export function createServer({ db, wa, bus }) {
     next();
   });
 
+  const adminAllowed = (req) => {
+    if (!config.demo.enabled) return false;
+    const token = config.demo.adminToken;
+    return Boolean(token) && req.get('x-admin-token') === token;
+  };
+
+  const playground = createPlayground({ db });
+
+  // ---------------------- public playground (tanpa login) ----------------------
+  const publicHits = new Map();
+  app.use('/api/public', express.json({ limit: '16kb' }));
+  app.use('/api/public', (req, res, next) => {
+    const ip = String(req.socket?.remoteAddress || req.ip || 'unknown');
+    const now = Date.now();
+    const hits = (publicHits.get(ip) || []).filter((t) => now - t < 60_000);
+    if (hits.length >= 30) {
+      return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi sebentar.' });
+    }
+    hits.push(now);
+    publicHits.set(ip, hits);
+    next();
+  });
+
+  app.get('/api/public/playground/state', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      business: {
+        name: config.demo.businessName,
+        tagline: DEMO_BUSINESS.tagline,
+        location: DEMO_BUSINESS.location,
+      },
+      personas: DEMO_PERSONAS.map(({ jid, name, label, language, mode }) => ({
+        jid,
+        name,
+        label,
+        language,
+        mode,
+      })),
+      scenarios: DEMO_SCENARIOS,
+      metrics: playground.metrics(),
+      model: config.ai.model,
+    });
+  });
+
+  app.post('/api/public/playground/chat', async (req, res) => {
+    const personaJid = DEMO_PERSONAS.some((p) => p.jid === req.body?.personaJid)
+      ? req.body.personaJid
+      : DEMO_PERSONAS[0].jid;
+    const ip = String(req.socket?.remoteAddress || req.ip || 'unknown');
+    const result = await playground.chat({
+      sessionId: req.body?.sessionId,
+      ip,
+      personaJid,
+      message: req.body?.message,
+      language: req.body?.language,
+    });
+    res.status(result.error && !result.trace ? 400 : 200).json(result);
+  });
+
+  app.post('/api/public/playground/reset', (req, res) => {
+    res.json(playground.reset(req.body?.sessionId));
+  });
+
+  app.get('/api/public/impact', (req, res) => {
+    const live = playground.metrics();
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      source: 'simulated+live',
+      simulatedDays: 30,
+      ...live,
+    });
+  });
+
   app.use('/api', (req, res, next) => {
+    if (adminAllowed(req)) return next();
+    if (config.demo.enabled) {
+      return res.status(403).json({ error: 'Butuh token admin untuk mengakses dashboard.' });
+    }
     if (!isPrivateRemote(req)) {
       return res.status(403).json({ error: 'API hanya bisa diakses dari jaringan lokal.' });
     }
@@ -157,6 +236,10 @@ export function createServer({ db, wa, bus }) {
 
   app.use('/api', (req, res, next) => {
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+    if (adminAllowed(req)) return next();
+    if (config.demo.enabled) {
+      return res.status(403).json({ error: 'Butuh token admin untuk mengubah data.' });
+    }
     if (!isLocalRequest(req)) {
       return res.status(403).json({ error: 'Aksi hanya bisa dilakukan dari PC.' });
     }
@@ -173,6 +256,27 @@ export function createServer({ db, wa, bus }) {
 
   let eventClients = 0;
   const eventClientsByIp = new Map();
+
+  /* ------------------------------- knowledge -------------------------------- */
+
+  app.get('/api/knowledge', (req, res) => {
+    res.json({ knowledge: store.listKnowledge(db) });
+  });
+
+  app.post('/api/knowledge', (req, res) => {
+    try {
+      const row = store.upsertKnowledge(db, req.body || {});
+      res.json({ knowledge: store.listKnowledge(db), saved: row });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/knowledge/:id', (req, res) => {
+    const ok = store.deleteKnowledge(db, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Sumber tidak ditemukan.' });
+    res.json({ knowledge: store.listKnowledge(db) });
+  });
 
   /* --------------------------------- status -------------------------------- */
 
