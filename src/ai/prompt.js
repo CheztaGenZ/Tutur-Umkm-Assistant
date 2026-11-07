@@ -140,7 +140,10 @@ export function normalizeIntent(value) {
 
 function normalizeSources(value) {
   if (!Array.isArray(value)) return [];
-  return value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim()).slice(0, 5);
+  const list = value
+    .filter((v) => typeof v === 'string' && v.trim())
+    .map((v) => v.trim());
+  return [...new Set(list)].slice(0, 5);
 }
 
 function knowledgeSection(knowledge = []) {
