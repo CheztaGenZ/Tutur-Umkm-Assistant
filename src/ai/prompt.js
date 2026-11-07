@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import { chatJson } from './client.js';
+import { formatKnowledgeBlock } from '../knowledge.js';
 import { glossFor } from './slang.js';
 import { loadSlangExtra } from './slangExtra.js';
 import fs from 'node:fs';
@@ -69,8 +70,7 @@ function styleBlock(style) {
   return lines.join('\n');
 }
 
-function examplesBlock(examples, contactName, meName) {
-  if (!examples?.length) return 'Belum ada contoh percakapan dengan orang ini.';
+function examplesBlock(examples, contactName, meName) {  if (!examples?.length) return 'Belum ada contoh percakapan dengan orang ini.';
   return examples
     .map((e) => `${contactName}: ${e.their}\n${meName}: ${e.mine}`)
     .join('\n---\n');
@@ -82,6 +82,78 @@ function examplesBlock(examples, contactName, meName) {
  *   2. relationship card (siapa lawan bicara)
  *   3. few-shot (pasangan chat asli)
  */
+const INTENTS = ['tanya_fakta', 'pesanan', 'booking', 'komplain', 'obrolan', 'spam'];
+
+/** Paksa intent ke daftar yang dikenal; default obrolan. */
+export function normalizeIntent(value) {
+  const raw = String(value || '').toLowerCase().trim();
+  return INTENTS.includes(raw) ? raw : 'obrolan';
+}
+
+function normalizeSources(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim()).slice(0, 5);
+}
+
+function knowledgeSection(knowledge = []) {
+  if (!knowledge.length) return '';
+  return `
+## SUMBER DATA BISNIS (SATU-SATUNYA SUMBER FAKTA)
+Gunakan HANYA data di bawah untuk harga, jam, menu, lokasi, dan kebijakan.
+Jika jawabannya tidak ada di sini: JANGAN mengarang. Balas bahwa kamu akan
+cek ke pemilik, dan set confidence <= 0.4 serta needs_owner true.
+Tulis id sumber yang kamu pakai di field "used_sources".
+
+${formatKnowledgeBlock(knowledge)}
+`;
+}
+
+const OUTPUT_CONTRACT = `Balas HANYA dengan JSON valid, tanpa markdown:{"reply": "teks balasan" atau null, "confidence": 0.0-1.0, "sticker": "nama file stiker" atau null, "attach_activity": true atau false, "reason": "alasan singkat dalam bahasa Indonesia", "intent": "tanya_fakta|pesanan|booking|komplain|obrolan|spam", "needs_owner": true atau false, "owner_reason": "kenapa perlu pemilik, singkat", "used_sources": ["id sumber yang dipakai"]}`;
+
+/** Prompt khusus mode demo bisnis: bersih dari aturan personal, fokus fakta. */
+function buildBusinessPrompt({
+  meName,
+  contactName,
+  style,
+  relationship,
+  examples,
+  knowledge,
+  maxBubbles = 3,
+  memory = null,
+  activity = null,
+}) {
+  const kbBlock = knowledgeSection(knowledge);
+  const activityBlock = activity?.text
+    ? `\n## INFO HARI INI\n${activity.text}\n`
+    : '';
+  return `Kamu adalah ${meName}, pemilik ${config.demo.businessName} di Bali. Kamu membalas chat pelanggan di WhatsApp, seolah-olah kamu sendiri yang mengetik.
+
+## ATURAN MUTLAK
+1. Balas sebagai ${meName}, bukan sebagai asisten. JANGAN pernah mengaku AI.
+2. Ikuti bahasa pelanggan: Indonesia atau Inggris. Santai, ramah, dan pendek (maksimal ${maxBubbles} baris, tiap baris maksimal 12 kata).
+3. Fakta (harga, menu, jam, lokasi, kebijakan) HANYA dari SUMBER DATA BISNIS. JANGAN mengarang angka, jam, atau alamat.
+4. Kalau faktanya tidak ada di sumber, jangan menebak. Bilang akan cek ke pemilik, confidence <= 0.4, needs_owner true.
+5. Pesanan, booking, reservasi, komplain, alergi, permintaan khusus, atau urusan uang: needs_owner true. Balasan tetap sopan dan menunggu konfirmasi pemilik.
+6. Spam, promosi, atau penipuan: reply null, intent spam.
+7. Jangan menjanjikan hal yang tidak ada di sumber (diskon, ketersediaan meja, kompensasi, antar gratis).
+8. Sapaan hangat boleh, tapi jangan bertele-tele dan jangan menawarkan banyak hal sekaligus.
+
+## GAYA NGETIK ${meName.toUpperCase()}
+${styleBlock(style)}
+
+## SIAPA ${contactName.toUpperCase()}
+${relationship || 'Calon pelanggan yang baru pertama chat.'}
+
+## MEMORI OBROLAN
+${memory || '(belum ada obrolan lama)'}
+${examplesBlock(examples, contactName, meName)}
+${activityBlock}${kbBlock}
+## FORMAT OUTPUT
+${OUTPUT_CONTRACT}
+
+Arti confidence: seberapa yakin kamu bahwa fakta di balasan ini benar dan aman dikirim tanpa menunggu pemilik.`;
+}
+
 export function buildSystemPrompt({
   meName,
   contactName,
@@ -97,7 +169,21 @@ export function buildSystemPrompt({
   maxBubbles = 3,
   memory = null,
   activity = null,
+  knowledge = [],
 }) {
+  if (config.demo.enabled) {
+    return buildBusinessPrompt({
+      meName,
+      contactName,
+      style,
+      relationship,
+      examples,
+      knowledge,
+      maxBubbles,
+      memory,
+      activity,
+    });
+  }
   const profile = loadProfile();
 
   const extraWords = loadSlangExtra();
@@ -254,8 +340,9 @@ ${avoid}
 ${activityBlock}
 ${stickerBlock}
 ${checkBlock}
+${knowledgeSection(knowledge)}
 ## FORMAT OUTPUT
-Balas HANYA dengan JSON valid, tanpa markdown:{"reply": "teks balasan" atau null, "confidence": 0.0-1.0, "sticker": "nama file stiker" atau null, "attach_activity": true atau false, "reason": "alasan singkat dalam bahasa Indonesia"}
+${OUTPUT_CONTRACT}
 
 Arti confidence: seberapa yakin kamu bahwa ini persis yang akan diketik ${meName} dan aman dikirim otomatis.`;
 }
@@ -307,6 +394,7 @@ export async function generateReply({
   memory = null,
   extraHint = null,
   activity = null,
+  knowledge = [],
 }) {
   const system = buildSystemPrompt({
     meName,
@@ -323,6 +411,7 @@ export async function generateReply({
     maxBubbles,
     memory,
     activity,
+    knowledge,
   });
   const userText = buildUserPrompt({ messages, contactName, meName, hasImage: !!image });
   const hints = [];
@@ -396,6 +485,10 @@ export async function generateReply({
     sticker: typeof out.sticker === 'string' ? out.sticker.trim() : null,
     attachActivity: out.attach_activity === true,
     reason: finalReason,
+    intent: normalizeIntent(out.intent),
+    needsOwner: out.needs_owner === true,
+    ownerReason: String(out.owner_reason || '').slice(0, 200),
+    knowledgeUsed: normalizeSources(out.used_sources),
   };
 }
 

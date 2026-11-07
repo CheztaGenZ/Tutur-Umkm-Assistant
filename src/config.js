@@ -76,6 +76,13 @@ export const config = {
 
   // Nomor yang tidak boleh dibalas sama sekali (pengaman ekstra di luar dashboard).
   vip: list(process.env.VIP_NUMBERS),
+
+  // Mode demo penjurian: persona bisnis, tanpa WhatsApp, dashboard butuh token.
+  demo: {
+    enabled: process.env.DEMO_MODE === '1',
+    businessName: process.env.BUSINESS_NAME || 'Sari Kitchen',
+    adminToken: process.env.ADMIN_TOKEN || '',
+  },
 };
 
 /** Parse "01:00-07:00" jadi dua menit-dalam-hari. Null kalau format salah atau dimatikan. */
